@@ -1,0 +1,55 @@
+{
+    "name": "ndx/statamic-simple-redirects",
+    "description": "Simple redirect management for Statamic CMS",
+    "type": "statamic-addon",
+    "license": "proprietary",
+    "author": "NEW DATA SERVICES",
+    "authors": [
+        {
+            "name": "new-data-services GmbH",
+            "role": "Manufacturer"
+        }
+    ],
+    "require": {
+        "statamic/cms": "^6.0"
+    },
+    "require-dev": {
+        "orchestra/testbench": "^10.8",
+        "pestphp/pest": "^4.3",
+        "laravel/pint": "^1.27"
+    },
+    "autoload": {
+        "psr-4": {
+            "Ndx\\SimpleRedirect\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Ndx\\SimpleRedirect\\Tests\\": "tests"
+        }
+    },
+    "scripts": {
+        "phpcs": "vendor/bin/pint -v --test",
+        "phpcs:fix": "vendor/bin/pint",
+        "test": "vendor/bin/pest"
+    },
+    "extra": {
+        "statamic": {
+            "name": "Simple Redirects",
+            "description": "Simple redirect management for Statamic CMS"
+        },
+        "laravel": {
+            "providers": [
+                "Ndx\\SimpleRedirect\\ServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pixelfear/composer-dist-plugin": true,
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

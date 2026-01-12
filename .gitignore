@@ -1,0 +1,13 @@
+/.idea
+/.php-cs-fixer.cache
+/.phpunit.cache
+/.phpunit.result.cache
+/composer.lock
+/node_modules
+/package-lock.json
+/vendor
+/yarn.lock
+/yarn-error.log
+vite.hot
+.DS_*
+.env
