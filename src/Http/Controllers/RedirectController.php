@@ -4,32 +4,17 @@ namespace Ndx\SimpleRedirect\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Ndx\SimpleRedirect\Data\RedirectTree;
 use Ndx\SimpleRedirect\Facades\Redirect;
-use Statamic\Facades\Site;
 use Statamic\Http\Controllers\CP\CpController;
 
 class RedirectController extends CpController
 {
-    public function index(Request $request)
+    public function index()
     {
         $this->authorize('manage redirects');
 
-        $site = $request->input('site', Site::default()->handle());
-
-        $redirects = Redirect::findBySite($site);
-        $tree      = RedirectTree::find($site);
-
-        $orderedRedirects = collect($tree->tree())
-            ->map(fn ($id) => $redirects->firstWhere('id', $id))
-            ->filter()
-            ->merge($redirects->whereNotIn('id', $tree->tree()))
-            ->values();
-
         return view('simple-redirects::index', [
-            'redirects'   => $orderedRedirects,
-            'sites'       => Site::all(),
-            'currentSite' => $site,
+            'redirects' => Redirect::ordered(),
         ]);
     }
 
@@ -37,9 +22,7 @@ class RedirectController extends CpController
     {
         $this->authorize('manage redirects');
 
-        return view('simple-redirects::create', [
-            'sites' => Site::all(),
-        ]);
+        return view('simple-redirects::create');
     }
 
     public function store(Request $request): RedirectResponse
@@ -51,7 +34,7 @@ class RedirectController extends CpController
             'destination' => 'required|string',
             'type'        => 'required|in:exact,regex',
             'status_code' => 'required|in:301,302,410',
-            'site'        => 'required|string',
+            'enabled'     => 'sometimes|boolean',
         ]);
 
         $redirect = Redirect::make()
@@ -59,12 +42,12 @@ class RedirectController extends CpController
             ->destination($validated['destination'])
             ->type($validated['type'])
             ->statusCode((int) $validated['status_code'])
-            ->site($validated['site']);
+            ->enabled($validated['enabled'] ?? true);
 
         Redirect::save($redirect);
 
         return redirect()
-            ->cpRoute('simple-redirects.index', ['site' => $validated['site']])
+            ->cpRoute('simple-redirects.index')
             ->with('success', __('simple-redirects::messages.redirect_created'));
     }
 
@@ -80,7 +63,6 @@ class RedirectController extends CpController
 
         return view('simple-redirects::edit', [
             'redirect' => $redirect,
-            'sites'    => Site::all(),
         ]);
     }
 
@@ -99,7 +81,7 @@ class RedirectController extends CpController
             'destination' => 'required|string',
             'type'        => 'required|in:exact,regex',
             'status_code' => 'required|in:301,302,410',
-            'site'        => 'required|string',
+            'enabled'     => 'sometimes|boolean',
         ]);
 
         $redirect
@@ -107,12 +89,12 @@ class RedirectController extends CpController
             ->destination($validated['destination'])
             ->type($validated['type'])
             ->statusCode((int) $validated['status_code'])
-            ->site($validated['site']);
+            ->enabled($validated['enabled'] ?? true);
 
         Redirect::save($redirect);
 
         return redirect()
-            ->cpRoute('simple-redirects.index', ['site' => $validated['site']])
+            ->cpRoute('simple-redirects.index')
             ->with('success', __('simple-redirects::messages.redirect_updated'));
     }
 
@@ -126,12 +108,10 @@ class RedirectController extends CpController
             abort(404);
         }
 
-        $site = $redirect->site();
-
         Redirect::delete($redirect);
 
         return redirect()
-            ->cpRoute('simple-redirects.index', ['site' => $site])
+            ->cpRoute('simple-redirects.index')
             ->with('success', __('simple-redirects::messages.redirect_deleted'));
     }
 }

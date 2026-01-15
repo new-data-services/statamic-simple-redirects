@@ -18,8 +18,8 @@ class ServiceProvider extends AddonServiceProvider
 
     public function register(): void
     {
-        $this->app->singleton(RedirectRepository::class, function () {
-            return new FileRedirectRepository;
+        $this->app->singleton(RedirectRepository::class, function ($app) {
+            return new FileRedirectRepository($app['stache']);
         });
     }
 

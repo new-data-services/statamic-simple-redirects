@@ -51,23 +51,14 @@
             @enderror
         </div>
 
-        @if($sites->count() > 1)
-            <div class="form-group">
-                <label class="font-bold text-base mb-sm">{{ __('Site') }} <i class="required">*</i></label>
-                <select name="site" class="input-text" required>
-                    @foreach($sites as $site)
-                        <option value="{{ $site->handle() }}" {{ old('site', \Statamic\Facades\Site::default()->handle()) === $site->handle() ? 'selected' : '' }}>
-                            {{ $site->name() }}
-                        </option>
-                    @endforeach
-                </select>
-                @error('site')
-                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                @enderror
-            </div>
-        @else
-            <input type="hidden" name="site" value="{{ $sites->first()->handle() }}">
-        @endif
+        <div class="form-group">
+            <label class="flex items-center gap-2">
+                <input type="hidden" name="enabled" value="0">
+                <input type="checkbox" name="enabled" value="1" {{ old('enabled', true) ? 'checked' : '' }}>
+                <span class="font-bold text-base">{{ __('Enabled') }}</span>
+            </label>
+            <p class="help-block">{{ __('Disabled redirects will not be applied.') }}</p>
+        </div>
 
         <div class="flex items-center justify-between pt-6 border-t">
             <a href="{{ cp_route('simple-redirects.index') }}" class="btn">{{ __('Cancel') }}</a>

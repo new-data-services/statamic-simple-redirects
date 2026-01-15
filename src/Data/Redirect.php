@@ -6,15 +6,15 @@ use Illuminate\Contracts\Support\Arrayable;
 use Ndx\SimpleRedirect\Contracts\Redirect as RedirectContract;
 use Statamic\Contracts\Data\Augmentable;
 use Statamic\Contracts\Data\Augmented;
+use Statamic\Data\ExistsAsFile;
 use Statamic\Data\HasAugmentedInstance;
-use Statamic\Facades\Site;
+use Statamic\Facades\Stache;
 use Statamic\Support\Str;
 use Statamic\Support\Traits\FluentlyGetsAndSets;
 
 class Redirect implements Arrayable, Augmentable, RedirectContract
 {
-    use FluentlyGetsAndSets;
-    use HasAugmentedInstance;
+    use ExistsAsFile, FluentlyGetsAndSets, HasAugmentedInstance;
 
     protected ?string $id = null;
 
@@ -26,12 +26,11 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
 
     protected int $statusCode = 301;
 
-    protected ?string $site = null;
+    protected bool $enabled = true;
 
     public function __construct()
     {
-        $this->id   = Str::uuid();
-        $this->site = Site::default()->handle();
+        $this->id = (string) Str::uuid();
     }
 
     public function id(?string $id = null)
@@ -59,9 +58,14 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
         return $this->fluentlyGetOrSet('statusCode')->args(func_get_args());
     }
 
-    public function site(?string $site = null)
+    public function enabled(?bool $enabled = null)
     {
-        return $this->fluentlyGetOrSet('site')->args(func_get_args());
+        return $this->fluentlyGetOrSet('enabled')->args(func_get_args());
+    }
+
+    public function isEnabled(): bool
+    {
+        return $this->enabled;
     }
 
     public function isExact(): bool
@@ -87,6 +91,14 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
         return false;
     }
 
+    public function path(): string
+    {
+        return vsprintf('%s/%s.md', [
+            rtrim(Stache::store('redirects')->directory(), '/'),
+            $this->id,
+        ]);
+    }
+
     public function toArray(): array
     {
         return [
@@ -95,19 +107,24 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
             'destination' => $this->destination,
             'type'        => $this->type,
             'status_code' => $this->statusCode,
-            'site'        => $this->site,
+            'enabled'     => $this->enabled,
         ];
     }
 
     public function fileData(): array
     {
-        return [
+        $data = [
             'source'      => $this->source,
             'destination' => $this->destination,
             'type'        => $this->type,
             'status_code' => $this->statusCode,
-            'site'        => $this->site,
         ];
+
+        if (! $this->enabled) {
+            $data['enabled'] = false;
+        }
+
+        return $data;
     }
 
     public function augmentedArrayData(): array

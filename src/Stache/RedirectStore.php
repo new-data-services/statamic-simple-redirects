@@ -19,34 +19,18 @@ class RedirectStore extends BasicStore
         return $file->getExtension() === 'md';
     }
 
-    public function makeItemFromFile($path, $contents)
+    public function makeItemFromFile($path, $contents): RedirectData
     {
         $data = YAML::parse($contents);
         $id   = pathinfo($path, PATHINFO_FILENAME);
 
-        $redirect = new RedirectData;
-        $redirect->id($id);
-
-        if (isset($data['source'])) {
-            $redirect->source($data['source']);
-        }
-
-        if (isset($data['destination'])) {
-            $redirect->destination($data['destination']);
-        }
-
-        if (isset($data['type'])) {
-            $redirect->type($data['type']);
-        }
-
-        if (isset($data['status_code'])) {
-            $redirect->statusCode($data['status_code']);
-        }
-
-        if (isset($data['site'])) {
-            $redirect->site($data['site']);
-        }
-
-        return $redirect;
+        return (new RedirectData)
+            ->id($id)
+            ->initialPath($path)
+            ->source($data['source'] ?? null)
+            ->destination($data['destination'] ?? null)
+            ->type($data['type'] ?? 'exact')
+            ->statusCode($data['status_code'] ?? 301)
+            ->enabled($data['enabled'] ?? true);
     }
 }

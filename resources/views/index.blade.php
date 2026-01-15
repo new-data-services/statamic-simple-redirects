@@ -11,19 +11,6 @@
         </a>
     </div>
 
-    @if($sites->count() > 1)
-        <div class="mb-4">
-            <label class="font-bold text-base mb-sm">{{ __('Site') }}</label>
-            <select class="input-text">
-                @foreach($sites as $site)
-                    <option value="{{ $site->handle() }}" {{ $currentSite === $site->handle() ? 'selected' : '' }}>
-                        {{ $site->name() }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
-    @endif
-
     <div class="card p-0">
         <table class="data-table">
             <thead>
@@ -32,6 +19,7 @@
                     <th>{{ __('Destination') }}</th>
                     <th>{{ __('Type') }}</th>
                     <th>{{ __('Status Code') }}</th>
+                    <th>{{ __('Enabled') }}</th>
                     <th class="actions-column"></th>
                 </tr>
             </thead>
@@ -52,6 +40,11 @@
                         <td>
                             <span class="badge-sm badge-{{ $redirect->statusCode() === 301 ? 'green' : ($redirect->statusCode() === 410 ? 'red' : 'yellow') }}">
                                 {{ $redirect->statusCode() }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge-sm badge-{{ $redirect->isEnabled() ? 'green' : 'gray' }}">
+                                {{ $redirect->isEnabled() ? __('Yes') : __('No') }}
                             </span>
                         </td>
                         <td class="flex justify-end gap-2">

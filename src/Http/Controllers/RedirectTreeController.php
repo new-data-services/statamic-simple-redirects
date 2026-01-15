@@ -6,7 +6,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Ndx\SimpleRedirect\Data\RedirectTree;
 use Ndx\SimpleRedirect\Events\RedirectTreeSaved;
-use Statamic\Facades\Site;
 use Statamic\Http\Controllers\CP\CpController;
 
 class RedirectTreeController extends CpController
@@ -15,10 +14,9 @@ class RedirectTreeController extends CpController
     {
         $this->authorize('manage redirects');
 
-        $site = $request->input('site', Site::default()->handle());
         $tree = $request->input('tree', []);
 
-        $redirectTree = RedirectTree::find($site);
+        $redirectTree = RedirectTree::instance();
         $redirectTree->setTree($tree);
         $redirectTree->save();
 

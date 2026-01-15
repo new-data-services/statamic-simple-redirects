@@ -14,7 +14,9 @@ interface Redirect
 
     public function statusCode(?int $statusCode = null);
 
-    public function site(?string $site = null);
+    public function enabled(?bool $enabled = null);
+
+    public function isEnabled(): bool;
 
     public function isExact(): bool;
 
@@ -25,4 +27,8 @@ interface Redirect
     public function toArray(): array;
 
     public function fileData(): array;
+
+    public function path(): string;
+
+    public function initialPath(?string $path = null);
 }

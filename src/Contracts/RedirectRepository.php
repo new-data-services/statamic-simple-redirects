@@ -10,7 +10,11 @@ interface RedirectRepository
 
     public function find(string $id): ?Redirect;
 
-    public function findBySite(string $site): Collection;
+    public function enabled(): Collection;
+
+    public function ordered(): Collection;
+
+    public function orderedEnabled(): Collection;
 
     public function save(Redirect $redirect): bool;
 

@@ -10,7 +10,9 @@ use Ndx\SimpleRedirect\Contracts\RedirectRepository as RedirectRepositoryContrac
 /**
  * @method static Collection all()
  * @method static RedirectContract|null find(string $id)
- * @method static Collection findBySite(string $site)
+ * @method static Collection enabled()
+ * @method static Collection ordered()
+ * @method static Collection orderedEnabled()
  * @method static bool save(RedirectContract $redirect)
  * @method static bool delete(RedirectContract $redirect)
  * @method static RedirectContract make()

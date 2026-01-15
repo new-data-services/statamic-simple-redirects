@@ -2,27 +2,29 @@
 
 namespace Ndx\SimpleRedirect\Data;
 
-use Illuminate\Support\Collection;
 use Statamic\Facades\File;
-use Statamic\Facades\Site;
 use Statamic\Facades\YAML;
 use Statamic\Support\Arr;
 
 class RedirectTree
 {
-    protected string $site;
-
     protected array $tree = [];
 
-    public function __construct(string $site)
+    protected static ?self $instance = null;
+
+    public function __construct()
     {
-        $this->site = $site;
         $this->load();
     }
 
-    public function site(): string
+    public static function instance(): self
     {
-        return $this->site;
+        return static::$instance ??= new static;
+    }
+
+    public static function clearInstance(): void
+    {
+        static::$instance = null;
     }
 
     public function tree(): array
@@ -96,7 +98,7 @@ class RedirectTree
 
     public function path(): string
     {
-        return base_path("content/trees/redirects/{$this->site}.yaml");
+        return base_path('content/trees/redirects.yaml');
     }
 
     protected function ensureDirectoryExists(): void
@@ -106,17 +108,5 @@ class RedirectTree
         if (! File::exists($directory)) {
             File::makeDirectory($directory, 0755, true);
         }
-    }
-
-    public static function find(string $site): self
-    {
-        return new static($site);
-    }
-
-    public static function all(): Collection
-    {
-        return Site::all()->map(function ($site) {
-            return static::find($site->handle());
-        });
     }
 }

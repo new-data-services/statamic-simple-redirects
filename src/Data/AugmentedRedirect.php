@@ -6,8 +6,8 @@ use Statamic\Data\AbstractAugmented;
 
 class AugmentedRedirect extends AbstractAugmented
 {
-    public function keys()
+    public function keys(): array
     {
-        return ['id', 'source', 'destination', 'type', 'status_code', 'site'];
+        return ['id', 'source', 'destination', 'type', 'status_code', 'enabled'];
     }
 }
