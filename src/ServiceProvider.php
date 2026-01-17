@@ -2,6 +2,9 @@
 
 namespace Ndx\SimpleRedirect;
 
+use Ndx\SimpleRedirect\Actions\DeleteRedirect;
+use Ndx\SimpleRedirect\Actions\DisableRedirect;
+use Ndx\SimpleRedirect\Actions\EnableRedirect;
 use Ndx\SimpleRedirect\Contracts\RedirectRepository;
 use Ndx\SimpleRedirect\Http\Middleware\HandleRedirects;
 use Ndx\SimpleRedirect\Repositories\FileRedirectRepository;
@@ -14,6 +17,26 @@ class ServiceProvider extends AddonServiceProvider
 {
     protected $routes = [
         'cp' => __DIR__ . '/../routes/cp.php',
+    ];
+
+    protected $vite = [
+        'hotFile' => __DIR__ . '/../dist/vite.hot',
+        'input'   => [
+            'resources/js/addon.js',
+        ],
+        'publicDirectory' => 'dist',
+    ];
+
+    protected $middlewareGroups = [
+        'web' => [
+            HandleRedirects::class,
+        ],
+    ];
+
+    protected $actions = [
+        EnableRedirect::class,
+        DisableRedirect::class,
+        DeleteRedirect::class,
     ];
 
     public function register(): void
@@ -30,16 +53,14 @@ class ServiceProvider extends AddonServiceProvider
         }
 
         $this
-            ->bootConfig()
-            ->bootTranslations()
+            ->bootRedirectConfig()
+            ->bootRedirectTranslations()
             ->bootPermissions()
             ->bootStache()
-            ->bootNavigation()
-            ->bootViews()
-            ->bootMiddleware();
+            ->bootNavigation();
     }
 
-    protected function bootConfig(): self
+    protected function bootRedirectConfig(): self
     {
         $this->mergeConfigFrom(__DIR__ . '/../config/redirects.php', 'statamic.redirects');
 
@@ -50,7 +71,7 @@ class ServiceProvider extends AddonServiceProvider
         return $this;
     }
 
-    protected function bootTranslations(): self
+    protected function bootRedirectTranslations(): self
     {
         $this->loadTranslationsFrom(__DIR__ . '/../lang', 'simple-redirects');
 
@@ -84,23 +105,9 @@ class ServiceProvider extends AddonServiceProvider
         Nav::extend(function ($nav) {
             $nav->tools(__('simple-redirects::messages.redirects'))
                 ->route('simple-redirects.index')
-                ->icon('direction')
+                ->icon('moved')
                 ->can('manage redirects');
         });
-
-        return $this;
-    }
-
-    protected function bootViews(): self
-    {
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'simple-redirects');
-
-        return $this;
-    }
-
-    protected function bootMiddleware(): self
-    {
-        $this->app['router']->pushMiddlewareToGroup('web', HandleRedirects::class);
 
         return $this;
     }

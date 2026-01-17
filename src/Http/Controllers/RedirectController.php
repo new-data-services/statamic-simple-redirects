@@ -2,56 +2,93 @@
 
 namespace Ndx\SimpleRedirect\Http\Controllers;
 
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+use Ndx\SimpleRedirect\Blueprints\RedirectBlueprint;
+use Ndx\SimpleRedirect\Data\RedirectTree;
 use Ndx\SimpleRedirect\Facades\Redirect;
 use Statamic\Http\Controllers\CP\CpController;
 
 class RedirectController extends CpController
 {
-    public function index()
+    public function index(): Response
     {
         $this->authorize('manage redirects');
 
-        return view('simple-redirects::index', [
-            'redirects' => Redirect::ordered(),
+        $redirects = Redirect::ordered()->map(fn ($r) => [
+            'id'          => $r->id(),
+            'source'      => $r->source(),
+            'destination' => $r->destination(),
+            'type'        => $r->type(),
+            'status_code' => $r->statusCode(),
+            'enabled'     => $r->isEnabled(),
+            'edit_url'    => cp_route('simple-redirects.edit', $r->id()),
+        ])->values();
+
+        return Inertia::render('simple-redirects::Index', [
+            'title'      => __('Redirects'),
+            'redirects'  => $redirects,
+            'columns'    => [
+                ['field' => 'source', 'label' => __('Source'), 'width' => '40%'],
+                ['field' => 'destination', 'label' => __('Destination'), 'width' => '40%'],
+                ['field' => 'type', 'label' => __('Type'), 'width' => '10%'],
+                ['field' => 'status_code', 'label' => __('Code'), 'width' => '10%'],
+            ],
+            'createUrl'  => cp_route('simple-redirects.create'),
+            'reorderUrl' => cp_route('simple-redirects.reorder'),
+            'actionUrl'  => cp_route('simple-redirects.actions.run'),
         ]);
     }
 
-    public function create()
+    public function create(): Response
     {
         $this->authorize('manage redirects');
 
-        return view('simple-redirects::create');
+        $blueprint = (new RedirectBlueprint)();
+        $fields    = $blueprint->fields()->preProcess();
+
+        return Inertia::render('simple-redirects::Publish', [
+            'title'            => __('Create Redirect'),
+            'icon'             => 'moved',
+            'blueprint'        => $blueprint->toPublishArray(),
+            'values'           => $fields->values()->all(),
+            'meta'             => $fields->meta()->all(),
+            'submitUrl'        => cp_route('simple-redirects.store'),
+            'listingUrl'       => cp_route('simple-redirects.index'),
+            'createAnotherUrl' => cp_route('simple-redirects.create'),
+            'editUrlTemplate'  => str_replace('__ID__', '{id}', cp_route('simple-redirects.edit', '__ID__')),
+        ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): JsonResponse
     {
         $this->authorize('manage redirects');
 
-        $validated = $request->validate([
-            'source'      => 'required|string',
-            'destination' => 'required|string',
-            'type'        => 'required|in:exact,regex',
-            'status_code' => 'required|in:301,302,410',
-            'enabled'     => 'sometimes|boolean',
-        ]);
+        $blueprint = (new RedirectBlueprint)();
+        $fields    = $blueprint->fields()->addValues($request->all());
+
+        $fields->validate();
+
+        $values = $fields->process()->values()->all();
 
         $redirect = Redirect::make()
-            ->source($validated['source'])
-            ->destination($validated['destination'])
-            ->type($validated['type'])
-            ->statusCode((int) $validated['status_code'])
-            ->enabled($validated['enabled'] ?? true);
+            ->source($values['source'])
+            ->destination($values['destination'] ?? '')
+            ->type($values['type'])
+            ->statusCode((int) $values['status_code'])
+            ->enabled($values['enabled'] ?? true);
 
         Redirect::save($redirect);
 
-        return redirect()
-            ->cpRoute('simple-redirects.index')
-            ->with('success', __('simple-redirects::messages.redirect_created'));
+        return response()->json([
+            'saved' => true,
+            'id'    => $redirect->id(),
+        ]);
     }
 
-    public function edit(string $id)
+    public function edit(string $id): Response
     {
         $this->authorize('manage redirects');
 
@@ -61,12 +98,33 @@ class RedirectController extends CpController
             abort(404);
         }
 
-        return view('simple-redirects::edit', [
-            'redirect' => $redirect,
+        $blueprint = (new RedirectBlueprint)();
+
+        $values = [
+            'source'      => $redirect->source(),
+            'destination' => $redirect->destination(),
+            'type'        => $redirect->type(),
+            'status_code' => (string) $redirect->statusCode(),
+            'enabled'     => $redirect->isEnabled(),
+        ];
+
+        $fields = $blueprint->fields()->addValues($values)->preProcess();
+
+        return Inertia::render('simple-redirects::Publish', [
+            'title'            => __('Edit Redirect'),
+            'icon'             => 'moved',
+            'blueprint'        => $blueprint->toPublishArray(),
+            'values'           => $fields->values()->all(),
+            'meta'             => $fields->meta()->all(),
+            'submitUrl'        => cp_route('simple-redirects.update', $id),
+            'listingUrl'       => cp_route('simple-redirects.index'),
+            'createAnotherUrl' => cp_route('simple-redirects.create'),
+            'editUrlTemplate'  => str_replace('__ID__', '{id}', cp_route('simple-redirects.edit', '__ID__')),
+            'isCreating'       => false,
         ]);
     }
 
-    public function update(Request $request, string $id): RedirectResponse
+    public function update(Request $request, string $id): JsonResponse
     {
         $this->authorize('manage redirects');
 
@@ -76,29 +134,29 @@ class RedirectController extends CpController
             abort(404);
         }
 
-        $validated = $request->validate([
-            'source'      => 'required|string',
-            'destination' => 'required|string',
-            'type'        => 'required|in:exact,regex',
-            'status_code' => 'required|in:301,302,410',
-            'enabled'     => 'sometimes|boolean',
-        ]);
+        $blueprint = (new RedirectBlueprint)();
+        $fields    = $blueprint->fields()->addValues($request->all());
+
+        $fields->validate();
+
+        $values = $fields->process()->values()->all();
 
         $redirect
-            ->source($validated['source'])
-            ->destination($validated['destination'])
-            ->type($validated['type'])
-            ->statusCode((int) $validated['status_code'])
-            ->enabled($validated['enabled'] ?? true);
+            ->source($values['source'])
+            ->destination($values['destination'] ?? '')
+            ->type($values['type'])
+            ->statusCode((int) $values['status_code'])
+            ->enabled($values['enabled'] ?? true);
 
         Redirect::save($redirect);
 
-        return redirect()
-            ->cpRoute('simple-redirects.index')
-            ->with('success', __('simple-redirects::messages.redirect_updated'));
+        return response()->json([
+            'saved' => true,
+            'id'    => $redirect->id(),
+        ]);
     }
 
-    public function destroy(string $id): RedirectResponse
+    public function destroy(string $id): JsonResponse
     {
         $this->authorize('manage redirects');
 
@@ -110,8 +168,17 @@ class RedirectController extends CpController
 
         Redirect::delete($redirect);
 
-        return redirect()
-            ->cpRoute('simple-redirects.index')
-            ->with('success', __('simple-redirects::messages.redirect_deleted'));
+        return response()->json(['success' => true]);
+    }
+
+    public function reorder(Request $request): JsonResponse
+    {
+        $this->authorize('manage redirects');
+
+        $order = $request->input('order', []);
+
+        RedirectTree::instance()->setTree($order)->save();
+
+        return response()->json(['success' => true]);
     }
 }

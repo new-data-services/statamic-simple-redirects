@@ -1,0 +1,25 @@
+{
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "watch": "npx vite",
+        "dev": "vite build --mode development --minify false --sourcemap",
+        "dev:watch": "vite build --mode development --minify false --sourcemap --watch",
+        "prod": "vite build --mode production",
+        "prod:watch": "vite build --mode production --watch",
+        "lint": "npx eslint resources/js",
+        "lint:fix": "npx eslint resources/js --fix",
+        "eslint": "npm run lint"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.39.2",
+        "@statamic/cms": "file:./vendor/statamic/cms/resources/dist-package",
+        "@vitejs/plugin-vue": "^6.0.3",
+        "eslint": "^9.39.2",
+        "eslint-plugin-vue": "^10.6.2",
+        "laravel-vite-plugin": "^2.0.1",
+        "vite": "^7.3.1",
+        "vue": "^3.5.26",
+        "vue-eslint-parser": "^10.2.0"
+    }
+}
