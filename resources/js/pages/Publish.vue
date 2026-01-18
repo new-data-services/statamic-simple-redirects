@@ -24,8 +24,7 @@ const formMeta = ref(props.meta)
 const errors = ref({})
 const saving = ref(false)
 
-const preferencesPrefix = 'simple-redirects'
-const preferencesKey = `${preferencesPrefix}.after_save`
+const preferencesKey = 'redirects.after_save'
 const afterSaveOption = ref('listing')
 
 let saveKeyBinding
