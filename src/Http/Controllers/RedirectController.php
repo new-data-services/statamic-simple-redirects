@@ -84,7 +84,17 @@ class RedirectController extends CpController
 
         return response()->json([
             'saved' => true,
-            'id'    => $redirect->id(),
+            'data'  => [
+                'id'     => $redirect->id(),
+                'values' => [
+                    'source'      => $redirect->source(),
+                    'destination' => $redirect->destination(),
+                    'type'        => $redirect->type(),
+                    'status_code' => (string) $redirect->statusCode(),
+                    'enabled'     => $redirect->isEnabled(),
+                ],
+                'extraValues' => [],
+            ],
         ]);
     }
 
@@ -152,7 +162,17 @@ class RedirectController extends CpController
 
         return response()->json([
             'saved' => true,
-            'id'    => $redirect->id(),
+            'data'  => [
+                'id'     => $redirect->id(),
+                'values' => [
+                    'source'      => $redirect->source(),
+                    'destination' => $redirect->destination(),
+                    'type'        => $redirect->type(),
+                    'status_code' => (string) $redirect->statusCode(),
+                    'enabled'     => $redirect->isEnabled(),
+                ],
+                'extraValues' => [],
+            ],
         ]);
     }
 

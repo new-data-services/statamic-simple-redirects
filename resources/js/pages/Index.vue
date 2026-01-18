@@ -14,6 +14,7 @@ const props = defineProps({
 
 const reordering = ref(false)
 const reorderedItems = ref(null)
+const listingKey = ref(0)
 
 function handleReordered(items) {
     reorderedItems.value = items
@@ -21,6 +22,8 @@ function handleReordered(items) {
 
 async function saveOrder() {
     if (! reorderedItems.value) {
+        reordering.value = false
+
         return
     }
 
@@ -41,9 +44,8 @@ async function saveOrder() {
         }
 
         Statamic.$toast.success(__('simple-redirects::messages.redirects_reordered'))
-        reordering.value = false
         reorderedItems.value = null
-        router.reload()
+        reordering.value = false
     } catch (error) {
         Statamic.$toast.error(__('simple-redirects::messages.order_save_failed'))
         console.error('Save order error:', error)
@@ -51,9 +53,9 @@ async function saveOrder() {
 }
 
 function cancelReorder() {
-    reordering.value = false
     reorderedItems.value = null
-    router.reload()
+    reordering.value = false
+    listingKey.value++
 }
 </script>
 
@@ -83,6 +85,7 @@ function cancelReorder() {
 
         <Listing
             v-if="redirects.length > 0"
+            :key="listingKey"
             :items="redirects"
             :columns="columns"
             :action-url="actionUrl"

@@ -1,7 +1,8 @@
 <script setup>
-import { ref, onMounted, onUnmounted, watch, getCurrentInstance } from 'vue'
+import { ref, onMounted, onUnmounted, watch, getCurrentInstance, useTemplateRef } from 'vue'
 import { Head, router } from '@statamic/cms/inertia'
 import { Header, Button, ButtonGroup, PublishContainer, PublishTabs, Dropdown, DropdownMenu, DropdownLabel, Radio, RadioGroup } from '@statamic/cms/ui'
+import { Pipeline, Request, BeforeSaveHooks, AfterSaveHooks } from '@statamic/cms/save-pipeline'
 
 const props = defineProps({
     title: String,
@@ -17,6 +18,7 @@ const props = defineProps({
 })
 
 const instance = getCurrentInstance()
+const container = useTemplateRef('container')
 const formValues = ref(props.values)
 const formMeta = ref(props.meta)
 const errors = ref({})
@@ -40,70 +42,46 @@ onMounted(() => {
 onUnmounted(() => saveKeyBinding?.destroy())
 
 watch(afterSaveOption, (value) => {
-    if (value === instance.proxy.$preferences.get(preferencesKey)) return
+    if (value === instance.proxy.$preferences.get(preferencesKey)) {
+        return
+    }
 
     value === 'listing'
         ? instance.proxy.$preferences.remove(preferencesKey)
         : instance.proxy.$preferences.set(preferencesKey, value)
 })
 
-async function save() {
-    saving.value = true
-    errors.value = {}
+function save() {
+    new Pipeline()
+        .provide({ container, errors, saving })
+        .through([
+            new BeforeSaveHooks('redirect', { values: formValues.value }),
+            new Request(props.submitUrl, props.isCreating ? 'post' : 'patch'),
+            new AfterSaveHooks('redirect', { isCreating: props.isCreating }),
+        ])
+        .then((response) => {
+            const message = props.isCreating
+                ? __('simple-redirects::messages.redirect_created')
+                : __('simple-redirects::messages.redirect_updated')
 
-    try {
-        const response = await fetch(props.submitUrl, {
-            method: props.isCreating ? 'POST' : 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': Statamic.$config.get('csrfToken'),
-                'Accept': 'application/json',
-            },
-            body: JSON.stringify(formValues.value),
-        })
+            Statamic.$toast.success(message)
 
-        const data = await response.json()
+            if (afterSaveOption.value === 'create_another') {
+                router.visit(props.createAnotherUrl)
 
-        if (! response.ok) {
-            if (response.status === 422) {
-                errors.value = data.errors || {}
-                Statamic.$toast.error(data.message || __('simple-redirects::messages.validation_failed'))
                 return
             }
 
-            Statamic.$toast.error(__('simple-redirects::messages.save_failed'))
-            return
-        }
+            if (afterSaveOption.value === 'continue_editing') {
+                if (props.isCreating && response.data.data.id) {
+                    router.visit(props.editUrlTemplate.replace('{id}', response.data.data.id))
+                }
 
-        const message = props.isCreating
-            ? __('simple-redirects::messages.redirect_created')
-            : __('simple-redirects::messages.redirect_updated')
+                return
+            }
 
-        Statamic.$toast.success(message)
-        handleAfterSave(data)
-    } finally {
-        saving.value = false
-    }
-}
-
-function handleAfterSave(data) {
-    Statamic.$dirty.remove(props.title)
-
-    if (afterSaveOption.value === 'create_another') {
-        router.visit(props.createAnotherUrl)
-
-        return
-    }
-
-    if (afterSaveOption.value === 'continue_editing') {
-        if (props.isCreating && data.id) {
-            router.visit(props.editUrlTemplate.replace('{id}', data.id))
-        }
-
-        return
-    }
-
-    router.visit(props.listingUrl)
+            router.visit(props.listingUrl)
+        })
 }
 </script>
 
@@ -115,8 +93,8 @@ function handleAfterSave(data) {
             <Button
                 variant="primary"
                 :text="__('Save')"
-                @click="save"
                 :disabled="saving"
+                @click="save"
             />
 
             <Dropdown align="end">
@@ -138,6 +116,7 @@ function handleAfterSave(data) {
     </Header>
 
     <PublishContainer
+        ref="container"
         :name="title"
         :blueprint="blueprint"
         :meta="formMeta"
