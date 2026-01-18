@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Ndx\SimpleRedirect\Blueprints\RedirectBlueprint;
-use Ndx\SimpleRedirect\Data\RedirectTree;
+use Ndx\SimpleRedirect\Contracts\RedirectTreeRepository;
 use Ndx\SimpleRedirect\Facades\Redirect;
 use Statamic\Http\Controllers\CP\CpController;
 
@@ -177,7 +177,8 @@ class RedirectController extends CpController
 
         $order = $request->input('order', []);
 
-        RedirectTree::instance()->setTree($order)->save();
+        $tree = app(RedirectTreeRepository::class)->findOrCreate('redirects');
+        $tree->tree($order)->save();
 
         return response()->json(['success' => true]);
     }

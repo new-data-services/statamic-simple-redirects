@@ -7,7 +7,7 @@ use Statamic\Facades\YAML;
 use Statamic\Stache\Stores\BasicStore;
 use Symfony\Component\Finder\SplFileInfo;
 
-class RedirectStore extends BasicStore
+class RedirectsStore extends BasicStore
 {
     public function key(): string
     {

@@ -5,20 +5,25 @@ namespace Ndx\SimpleRedirect\Repositories;
 use Illuminate\Support\Collection;
 use Ndx\SimpleRedirect\Contracts\Redirect;
 use Ndx\SimpleRedirect\Contracts\RedirectRepository as RedirectRepositoryContract;
+use Ndx\SimpleRedirect\Contracts\RedirectTreeRepository;
 use Ndx\SimpleRedirect\Data\Redirect as RedirectData;
-use Ndx\SimpleRedirect\Data\RedirectTree;
 use Ndx\SimpleRedirect\Events\RedirectDeleted;
 use Ndx\SimpleRedirect\Events\RedirectSaved;
-use Ndx\SimpleRedirect\Stache\RedirectStore;
+use Ndx\SimpleRedirect\Stache\RedirectsStore;
 use Statamic\Stache\Stache;
 
 class FileRedirectRepository implements RedirectRepositoryContract
 {
     public function __construct(protected Stache $stache) {}
 
-    protected function store(): RedirectStore
+    protected function store(): RedirectsStore
     {
         return $this->stache->store('redirects');
+    }
+
+    protected function treeRepository(): RedirectTreeRepository
+    {
+        return app(RedirectTreeRepository::class);
     }
 
     public function all(): Collection
@@ -50,7 +55,7 @@ class FileRedirectRepository implements RedirectRepositoryContract
 
     protected function applyTreeOrder(Collection $redirects): Collection
     {
-        $tree = RedirectTree::instance()->tree();
+        $tree = $this->treeRepository()->findOrCreate('redirects')->tree();
 
         return collect($tree)
             ->map(fn ($id) => $redirects->firstWhere('id', $id))
@@ -63,7 +68,8 @@ class FileRedirectRepository implements RedirectRepositoryContract
     {
         $this->store()->save($redirect);
 
-        RedirectTree::instance()->append($redirect->id())->save();
+        $tree = $this->treeRepository()->findOrCreate('redirects');
+        $tree->append($redirect->id())->save();
 
         event(new RedirectSaved($redirect));
 
@@ -74,7 +80,8 @@ class FileRedirectRepository implements RedirectRepositoryContract
     {
         $this->store()->delete($redirect);
 
-        RedirectTree::instance()->remove($redirect->id())->save();
+        $tree = $this->treeRepository()->findOrCreate('redirects');
+        $tree->remove($redirect->id())->save();
 
         event(new RedirectDeleted($redirect));
 

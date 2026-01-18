@@ -2,41 +2,29 @@
 
 namespace Ndx\SimpleRedirect\Data;
 
-use Statamic\Facades\File;
-use Statamic\Facades\YAML;
-use Statamic\Support\Arr;
+use Ndx\SimpleRedirect\Contracts\RedirectTree as RedirectTreeContract;
+use Ndx\SimpleRedirect\Contracts\RedirectTreeRepository;
+use Ndx\SimpleRedirect\Events\RedirectTreeSaved;
+use Statamic\Data\ExistsAsFile;
+use Statamic\Facades\Stache;
+use Statamic\Support\Traits\FluentlyGetsAndSets;
 
-class RedirectTree
+class RedirectTree implements RedirectTreeContract
 {
+    use ExistsAsFile, FluentlyGetsAndSets;
+
+    protected string $handle = 'redirects';
+
     protected array $tree = [];
 
-    protected static ?self $instance = null;
-
-    public function __construct()
+    public function handle(?string $handle = null)
     {
-        $this->load();
+        return $this->fluentlyGetOrSet('handle')->args(func_get_args());
     }
 
-    public static function instance(): self
+    public function tree(?array $tree = null)
     {
-        return static::$instance ??= new static;
-    }
-
-    public static function clearInstance(): void
-    {
-        static::$instance = null;
-    }
-
-    public function tree(): array
-    {
-        return $this->tree;
-    }
-
-    public function setTree(array $tree): self
-    {
-        $this->tree = $tree;
-
-        return $this;
+        return $this->fluentlyGetOrSet('tree')->args(func_get_args());
     }
 
     public function append(string $id): self
@@ -50,7 +38,9 @@ class RedirectTree
 
     public function remove(string $id): self
     {
-        $this->tree = array_values(array_filter($this->tree, fn ($item) => $item !== $id));
+        $this->tree = array_values(
+            array_filter($this->tree, fn ($item) => $item !== $id)
+        );
 
         return $this;
     }
@@ -64,49 +54,32 @@ class RedirectTree
         return $this;
     }
 
+    public function path(): string
+    {
+        return vsprintf('%s/%s.yaml', [
+            rtrim(Stache::store('redirects-tree')->directory(), '/'),
+            $this->handle,
+        ]);
+    }
+
+    public function fileData(): array
+    {
+        return [
+            'tree' => $this->tree,
+        ];
+    }
+
     public function save(): bool
     {
-        $this->ensureDirectoryExists();
+        $this->repository()->save($this);
 
-        $contents = YAML::dump(['tree' => $this->tree]);
-
-        File::put($this->path(), $contents);
+        event(new RedirectTreeSaved($this));
 
         return true;
     }
 
-    public function load(): self
+    protected function repository(): RedirectTreeRepository
     {
-        if (! File::exists($this->path())) {
-            $this->tree = [];
-
-            return $this;
-        }
-
-        $contents = File::get($this->path());
-        $data     = YAML::parse($contents);
-
-        $this->tree = Arr::get($data, 'tree', []);
-
-        return $this;
-    }
-
-    public function exists(): bool
-    {
-        return File::exists($this->path());
-    }
-
-    public function path(): string
-    {
-        return base_path('content/trees/redirects.yaml');
-    }
-
-    protected function ensureDirectoryExists(): void
-    {
-        $directory = dirname($this->path());
-
-        if (! File::exists($directory)) {
-            File::makeDirectory($directory, 0755, true);
-        }
+        return app(RedirectTreeRepository::class);
     }
 }

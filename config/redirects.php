@@ -31,14 +31,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Flat File Path
+    | Stache Stores
     |--------------------------------------------------------------------------
     |
-    | When using the flat file driver, this is the path where redirect files
-    | will be stored.
+    | Configure the directories for the Stache stores used by the Simple
+    | Redirects addon. Each key is the store name, and the value is the
+    | directory path where the store files will be stored.
     |
     */
 
-    'path' => base_path('content/redirects'),
+    'stores' => [
+        'redirects'      => base_path('content/redirects'),
+        'redirects-tree' => base_path('content/trees/redirects'),
+    ],
 
 ];

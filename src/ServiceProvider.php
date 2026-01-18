@@ -6,9 +6,12 @@ use Ndx\SimpleRedirect\Actions\DeleteRedirect;
 use Ndx\SimpleRedirect\Actions\DisableRedirect;
 use Ndx\SimpleRedirect\Actions\EnableRedirect;
 use Ndx\SimpleRedirect\Contracts\RedirectRepository;
+use Ndx\SimpleRedirect\Contracts\RedirectTreeRepository;
 use Ndx\SimpleRedirect\Http\Middleware\HandleRedirects;
 use Ndx\SimpleRedirect\Repositories\FileRedirectRepository;
-use Ndx\SimpleRedirect\Stache\RedirectStore;
+use Ndx\SimpleRedirect\Repositories\FileRedirectTreeRepository;
+use Ndx\SimpleRedirect\Stache\RedirectsStore;
+use Ndx\SimpleRedirect\Stache\RedirectsTreeStore;
 use Statamic\Facades\CP\Nav;
 use Statamic\Facades\Permission;
 use Statamic\Providers\AddonServiceProvider;
@@ -43,6 +46,10 @@ class ServiceProvider extends AddonServiceProvider
     {
         $this->app->singleton(RedirectRepository::class, function ($app) {
             return new FileRedirectRepository($app['stache']);
+        });
+
+        $this->app->singleton(RedirectTreeRepository::class, function ($app) {
+            return new FileRedirectTreeRepository($app['stache']);
         });
     }
 
@@ -92,10 +99,16 @@ class ServiceProvider extends AddonServiceProvider
 
     protected function bootStache(): self
     {
-        $store = new RedirectStore;
-        $store->directory(config('statamic.redirects.path', base_path('content/redirects')));
+        $stores = config('statamic.redirects.stores', []);
 
-        app('stache')->registerStore($store);
+        $redirectsStore = new RedirectsStore;
+        $redirectsStore->directory($stores['redirects'] ?? base_path('content/redirects'));
+
+        $treeStore = new RedirectsTreeStore;
+        $treeStore->directory($stores['redirects-tree'] ?? base_path('content/trees/redirects'));
+
+        app('stache')->registerStore($redirectsStore);
+        app('stache')->registerStore($treeStore);
 
         return $this;
     }
