@@ -2,6 +2,8 @@
 
 namespace Ndx\SimpleRedirect\Blueprints;
 
+use Ndx\SimpleRedirect\Rules\ValidRedirectDestination;
+use Ndx\SimpleRedirect\Rules\ValidRedirectSource;
 use Statamic\Facades\Blueprint;
 use Statamic\Fields\Blueprint as BlueprintInstance;
 
@@ -21,8 +23,8 @@ class RedirectBlueprint
                                     'field'  => [
                                         'type'         => 'text',
                                         'display'      => __('Source URL'),
-                                        'instructions' => __('The URL path to redirect from (e.g., /old-page)'),
-                                        'validate'     => ['required'],
+                                        'instructions' => __('simple-redirects::messages.instructions.source'),
+                                        'validate'     => ['required', new ValidRedirectSource],
                                     ],
                                 ],
                                 [
@@ -30,22 +32,17 @@ class RedirectBlueprint
                                     'field'  => [
                                         'type'         => 'text',
                                         'display'      => __('Destination URL'),
-                                        'instructions' => __('The URL to redirect to (e.g., /new-page or https://example.com)'),
-                                        'validate'     => ['required'],
+                                        'instructions' => __('simple-redirects::messages.instructions.destination'),
+                                        'validate'     => ['required', new ValidRedirectDestination],
                                     ],
                                 ],
                                 [
-                                    'handle' => 'type',
+                                    'handle' => 'regex',
                                     'field'  => [
-                                        'type'         => 'select',
-                                        'display'      => __('Match Type'),
-                                        'instructions' => __('How the source URL should be matched'),
-                                        'options'      => [
-                                            'exact' => __('Exact Match'),
-                                            'regex' => __('Regular Expression'),
-                                        ],
-                                        'default'  => 'exact',
-                                        'validate' => ['required'],
+                                        'type'         => 'toggle',
+                                        'display'      => __('Regex'),
+                                        'instructions' => __('simple-redirects::messages.instructions.regex'),
+                                        'default'      => false,
                                     ],
                                 ],
                                 [

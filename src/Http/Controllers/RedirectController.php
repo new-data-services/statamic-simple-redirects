@@ -21,7 +21,7 @@ class RedirectController extends CpController
             'id'          => $r->id(),
             'source'      => $r->source(),
             'destination' => $r->destination(),
-            'type'        => $r->type(),
+            'regex'       => $r->isRegex(),
             'status_code' => $r->statusCode(),
             'enabled'     => $r->isEnabled(),
             'edit_url'    => cp_route('simple-redirects.edit', $r->id()),
@@ -31,9 +31,8 @@ class RedirectController extends CpController
             'title'      => __('Redirects'),
             'redirects'  => $redirects,
             'columns'    => [
-                ['field' => 'source', 'label' => __('Source'), 'width' => '40%'],
-                ['field' => 'destination', 'label' => __('Destination'), 'width' => '40%'],
-                ['field' => 'type', 'label' => __('Type'), 'width' => '10%'],
+                ['field' => 'source', 'label' => __('Source'), 'width' => '45%'],
+                ['field' => 'destination', 'label' => __('Destination'), 'width' => '45%'],
                 ['field' => 'status_code', 'label' => __('Code'), 'width' => '10%'],
             ],
             'createUrl'  => cp_route('simple-redirects.create'),
@@ -74,9 +73,9 @@ class RedirectController extends CpController
         $values = $fields->process()->values()->all();
 
         $redirect = Redirect::make()
+            ->regex($values['regex'] ?? false)
             ->source($values['source'])
             ->destination($values['destination'] ?? '')
-            ->type($values['type'])
             ->statusCode((int) $values['status_code'])
             ->enabled($values['enabled'] ?? true);
 
@@ -89,7 +88,7 @@ class RedirectController extends CpController
                 'values' => [
                     'source'      => $redirect->source(),
                     'destination' => $redirect->destination(),
-                    'type'        => $redirect->type(),
+                    'regex'       => $redirect->isRegex(),
                     'status_code' => (string) $redirect->statusCode(),
                     'enabled'     => $redirect->isEnabled(),
                 ],
@@ -113,7 +112,7 @@ class RedirectController extends CpController
         $values = [
             'source'      => $redirect->source(),
             'destination' => $redirect->destination(),
-            'type'        => $redirect->type(),
+            'regex'       => $redirect->isRegex(),
             'status_code' => (string) $redirect->statusCode(),
             'enabled'     => $redirect->isEnabled(),
         ];
@@ -152,9 +151,9 @@ class RedirectController extends CpController
         $values = $fields->process()->values()->all();
 
         $redirect
+            ->regex($values['regex'] ?? false)
             ->source($values['source'])
             ->destination($values['destination'] ?? '')
-            ->type($values['type'])
             ->statusCode((int) $values['status_code'])
             ->enabled($values['enabled'] ?? true);
 
@@ -167,7 +166,7 @@ class RedirectController extends CpController
                 'values' => [
                     'source'      => $redirect->source(),
                     'destination' => $redirect->destination(),
-                    'type'        => $redirect->type(),
+                    'regex'       => $redirect->isRegex(),
                     'status_code' => (string) $redirect->statusCode(),
                     'enabled'     => $redirect->isEnabled(),
                 ],

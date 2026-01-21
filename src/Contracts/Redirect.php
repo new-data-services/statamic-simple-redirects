@@ -10,7 +10,7 @@ interface Redirect
 
     public function destination(?string $destination = null);
 
-    public function type(?string $type = null);
+    public function regex(?bool $regex = null);
 
     public function statusCode(?int $statusCode = null);
 
@@ -18,11 +18,11 @@ interface Redirect
 
     public function isEnabled(): bool;
 
-    public function isExact(): bool;
-
     public function isRegex(): bool;
 
     public function matches(string $url): bool;
+
+    public function buildDestination(string $matchedUrl): string;
 
     public function toArray(): array;
 

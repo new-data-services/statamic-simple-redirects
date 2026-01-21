@@ -18,14 +18,17 @@ class HandleRedirects
             return $response;
         }
 
-        $url      = $request->getPathInfo();
+        $url = $request->getRequestUri();
+
         $redirect = $this->findMatchingRedirect($url);
 
         if (! $redirect) {
             return $response;
         }
 
-        return redirect($redirect->destination(), $redirect->statusCode());
+        $destination = $redirect->buildDestination($url);
+
+        return redirect($destination, $redirect->statusCode());
     }
 
     protected function findMatchingRedirect(string $url): ?RedirectContract

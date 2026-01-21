@@ -22,11 +22,13 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
 
     protected ?string $destination = null;
 
-    protected string $type = 'exact';
+    protected bool $regex = false;
 
     protected int $statusCode = 301;
 
     protected bool $enabled = true;
+
+    protected ?string $compiledPattern = null;
 
     public function __construct()
     {
@@ -40,7 +42,13 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
 
     public function source(?string $source = null)
     {
-        return $this->fluentlyGetOrSet('source')->args(func_get_args());
+        return $this->fluentlyGetOrSet('source')
+            ->setter(function ($value) {
+                $this->compiledPattern = null;
+
+                return static::normalizeSource($value, $this->regex);
+            })
+            ->args(func_get_args());
     }
 
     public function destination(?string $destination = null)
@@ -48,9 +56,18 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
         return $this->fluentlyGetOrSet('destination')->args(func_get_args());
     }
 
-    public function type(?string $type = null)
+    public function regex(?bool $regex = null)
     {
-        return $this->fluentlyGetOrSet('type')->args(func_get_args());
+        return $this->fluentlyGetOrSet('regex')
+            ->setter(function ($value) {
+                $this->compiledPattern = null;
+                if ($this->source) {
+                    $this->source = static::normalizeSource($this->source, $value);
+                }
+
+                return $value;
+            })
+            ->args(func_get_args());
     }
 
     public function statusCode(?int $statusCode = null)
@@ -68,27 +85,88 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
         return $this->enabled;
     }
 
-    public function isExact(): bool
-    {
-        return $this->type === 'exact';
-    }
-
     public function isRegex(): bool
     {
-        return $this->type === 'regex';
+        return $this->regex;
     }
 
     public function matches(string $url): bool
     {
-        if ($this->isExact()) {
-            return $this->source === $url;
+        $pattern = $this->getCompiledPattern();
+
+        return (bool) @preg_match($pattern, $url);
+    }
+
+    public function buildDestination(string $matchedUrl): string
+    {
+        return $this->replaceCaptures($matchedUrl);
+    }
+
+    protected function replaceCaptures(string $url): string
+    {
+        $pattern = $this->getCompiledPattern();
+
+        if (@preg_match($pattern, $url, $matches)) {
+            return preg_replace_callback(
+                '/\$(\d+)/',
+                function ($match) use ($matches) {
+                    $index = (int) $match[1];
+
+                    if (! isset($matches[$index])) {
+                        return $match[0];
+                    }
+
+                    return $matches[$index];
+                },
+                $this->destination
+            );
         }
 
-        if ($this->isRegex()) {
-            return (bool) preg_match($this->source, $url);
+        return $this->destination;
+    }
+
+    protected function getCompiledPattern(): string
+    {
+        if ($this->compiledPattern === null) {
+            $this->compiledPattern = $this->regex
+                ? $this->compileRegexPattern($this->source)
+                : $this->compileWildcardPattern($this->source);
         }
 
-        return false;
+        return $this->compiledPattern;
+    }
+
+    protected function compileWildcardPattern(string $pattern): string
+    {
+        $escaped = preg_quote($pattern, '#');
+
+        $escaped = str_replace('\\*', '(.*)', $escaped);
+
+        return '#^' . $escaped . '$#i';
+    }
+
+    protected function compileRegexPattern(string $pattern): string
+    {
+        if (preg_match('/^[#\/~@!%].*[#\/~@!%][imsxADSUXu]*$/', $pattern)) {
+            return $pattern;
+        }
+
+        if (! str_starts_with($pattern, '/')) {
+            $pattern = '/' . $pattern;
+        }
+
+        return '#^' . $pattern . '$#';
+    }
+
+    public static function normalizeSource(string $source, bool $regex): string
+    {
+        if (! $regex) {
+            if (! str_starts_with($source, '/')) {
+                $source = '/' . $source;
+            }
+        }
+
+        return $source;
     }
 
     public function path(): string
@@ -105,7 +183,7 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
             'id'          => $this->id,
             'source'      => $this->source,
             'destination' => $this->destination,
-            'type'        => $this->type,
+            'regex'       => $this->regex,
             'status_code' => $this->statusCode,
             'enabled'     => $this->enabled,
         ];
@@ -116,9 +194,12 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
         $data = [
             'source'      => $this->source,
             'destination' => $this->destination,
-            'type'        => $this->type,
             'status_code' => $this->statusCode,
         ];
+
+        if ($this->regex) {
+            $data['regex'] = true;
+        }
 
         if (! $this->enabled) {
             $data['enabled'] = false;

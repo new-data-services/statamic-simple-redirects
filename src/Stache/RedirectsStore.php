@@ -27,9 +27,9 @@ class RedirectsStore extends BasicStore
         return (new RedirectData)
             ->id($id)
             ->initialPath($path)
+            ->regex($data['regex'] ?? false)
             ->source($data['source'] ?? null)
             ->destination($data['destination'] ?? null)
-            ->type($data['type'] ?? 'exact')
             ->statusCode($data['status_code'] ?? 301)
             ->enabled($data['enabled'] ?? true);
     }
