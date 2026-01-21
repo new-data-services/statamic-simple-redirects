@@ -16,6 +16,8 @@ interface Redirect
 
     public function enabled(?bool $enabled = null);
 
+    public function order(?int $order = null);
+
     public function isEnabled(): bool;
 
     public function isRegex(): bool;

@@ -7,7 +7,8 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 use Ndx\SimpleRedirect\Blueprints\RedirectBlueprint;
-use Ndx\SimpleRedirect\Contracts\RedirectTreeRepository;
+use Ndx\SimpleRedirect\Contracts\Redirect as RedirectContract;
+use Ndx\SimpleRedirect\Contracts\RedirectRepository;
 use Ndx\SimpleRedirect\Facades\Redirect;
 use Statamic\Http\Controllers\CP\CpController;
 
@@ -65,36 +66,12 @@ class RedirectController extends CpController
     {
         $this->authorize('manage redirects');
 
-        $blueprint = (new RedirectBlueprint)();
-        $fields    = $blueprint->fields()->addValues($request->all());
-
-        $fields->validate();
-
-        $values = $fields->process()->values()->all();
-
-        $redirect = Redirect::make()
-            ->regex($values['regex'] ?? false)
-            ->source($values['source'])
-            ->destination($values['destination'] ?? '')
-            ->statusCode((int) $values['status_code'])
-            ->enabled($values['enabled'] ?? true);
+        $values   = $this->processFormData($request);
+        $redirect = $this->hydrateRedirect(Redirect::make(), $values);
 
         Redirect::save($redirect);
 
-        return response()->json([
-            'saved' => true,
-            'data'  => [
-                'id'     => $redirect->id(),
-                'values' => [
-                    'source'      => $redirect->source(),
-                    'destination' => $redirect->destination(),
-                    'regex'       => $redirect->isRegex(),
-                    'status_code' => (string) $redirect->statusCode(),
-                    'enabled'     => $redirect->isEnabled(),
-                ],
-                'extraValues' => [],
-            ],
-        ]);
+        return $this->jsonResponse($redirect);
     }
 
     public function edit(string $id): Response
@@ -143,36 +120,12 @@ class RedirectController extends CpController
             abort(404);
         }
 
-        $blueprint = (new RedirectBlueprint)();
-        $fields    = $blueprint->fields()->addValues($request->all());
-
-        $fields->validate();
-
-        $values = $fields->process()->values()->all();
-
-        $redirect
-            ->regex($values['regex'] ?? false)
-            ->source($values['source'])
-            ->destination($values['destination'] ?? '')
-            ->statusCode((int) $values['status_code'])
-            ->enabled($values['enabled'] ?? true);
+        $values = $this->processFormData($request);
+        $this->hydrateRedirect($redirect, $values);
 
         Redirect::save($redirect);
 
-        return response()->json([
-            'saved' => true,
-            'data'  => [
-                'id'     => $redirect->id(),
-                'values' => [
-                    'source'      => $redirect->source(),
-                    'destination' => $redirect->destination(),
-                    'regex'       => $redirect->isRegex(),
-                    'status_code' => (string) $redirect->statusCode(),
-                    'enabled'     => $redirect->isEnabled(),
-                ],
-                'extraValues' => [],
-            ],
-        ]);
+        return $this->jsonResponse($redirect);
     }
 
     public function destroy(string $id): JsonResponse
@@ -196,9 +149,45 @@ class RedirectController extends CpController
 
         $order = $request->input('order', []);
 
-        $tree = app(RedirectTreeRepository::class)->findOrCreate('redirects');
-        $tree->tree($order)->save();
+        app(RedirectRepository::class)->reorder($order);
 
         return response()->json(['success' => true]);
+    }
+
+    protected function processFormData(Request $request): array
+    {
+        $blueprint = (new RedirectBlueprint)();
+        $fields    = $blueprint->fields()->addValues($request->all());
+        $fields->validate();
+
+        return $fields->process()->values()->all();
+    }
+
+    protected function hydrateRedirect(RedirectContract $redirect, array $values): RedirectContract
+    {
+        return $redirect
+            ->regex($values['regex'] ?? false)
+            ->source($values['source'])
+            ->destination($values['destination'] ?? '')
+            ->statusCode((int) $values['status_code'])
+            ->enabled($values['enabled'] ?? true);
+    }
+
+    protected function jsonResponse(RedirectContract $redirect): JsonResponse
+    {
+        return response()->json([
+            'saved' => true,
+            'data'  => [
+                'id'     => $redirect->id(),
+                'values' => [
+                    'source'      => $redirect->source(),
+                    'destination' => $redirect->destination(),
+                    'regex'       => $redirect->isRegex(),
+                    'status_code' => (string) $redirect->statusCode(),
+                    'enabled'     => $redirect->isEnabled(),
+                ],
+                'extraValues' => [],
+            ],
+        ]);
     }
 }

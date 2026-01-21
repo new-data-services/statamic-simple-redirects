@@ -5,6 +5,7 @@ namespace Ndx\SimpleRedirect\Rules;
 use Closure;
 use Illuminate\Contracts\Validation\DataAwareRule;
 use Illuminate\Contracts\Validation\ValidationRule;
+use Ndx\SimpleRedirect\Data\Redirect;
 
 class ValidRedirectSource implements DataAwareRule, ValidationRule
 {
@@ -31,7 +32,7 @@ class ValidRedirectSource implements DataAwareRule, ValidationRule
 
     protected function validateRegex(string $pattern, Closure $fail): void
     {
-        $normalizedPattern = $this->normalizeRegexPattern($pattern);
+        $normalizedPattern = Redirect::normalizeRegexPattern($pattern);
 
         set_error_handler(fn () => true);
         $result = @preg_match($normalizedPattern, '');
@@ -46,18 +47,5 @@ class ValidRedirectSource implements DataAwareRule, ValidationRule
         if (preg_match('/(\+|\*|\?)\s*(\+|\*|\?)/', $pattern)) {
             $fail('simple-redirects::messages.validation.dangerous_regex_pattern')->translate();
         }
-    }
-
-    protected function normalizeRegexPattern(string $pattern): string
-    {
-        if (preg_match('/^[#\/~@!%].*[#\/~@!%][imsxADSUXu]*$/', $pattern)) {
-            return $pattern;
-        }
-
-        if (! str_starts_with($pattern, '/')) {
-            $pattern = '/' . $pattern;
-        }
-
-        return '#^' . $pattern . '$#';
     }
 }

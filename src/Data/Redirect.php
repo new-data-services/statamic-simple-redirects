@@ -3,7 +3,9 @@
 namespace Ndx\SimpleRedirect\Data;
 
 use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Database\Eloquent\Model;
 use Ndx\SimpleRedirect\Contracts\Redirect as RedirectContract;
+use Ndx\SimpleRedirect\Models\Redirect as RedirectModel;
 use Statamic\Contracts\Data\Augmentable;
 use Statamic\Contracts\Data\Augmented;
 use Statamic\Data\ExistsAsFile;
@@ -28,7 +30,9 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
 
     protected bool $enabled = true;
 
-    protected ?string $compiledPattern = null;
+    protected ?int $order = null;
+
+    protected ?Model $model = null;
 
     public function __construct()
     {
@@ -44,8 +48,6 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
     {
         return $this->fluentlyGetOrSet('source')
             ->setter(function ($value) {
-                $this->compiledPattern = null;
-
                 return static::normalizeSource($value, $this->regex);
             })
             ->args(func_get_args());
@@ -60,7 +62,6 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
     {
         return $this->fluentlyGetOrSet('regex')
             ->setter(function ($value) {
-                $this->compiledPattern = null;
                 if ($this->source) {
                     $this->source = static::normalizeSource($this->source, $value);
                 }
@@ -78,6 +79,46 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
     public function enabled(?bool $enabled = null)
     {
         return $this->fluentlyGetOrSet('enabled')->args(func_get_args());
+    }
+
+    public function order(?int $order = null)
+    {
+        return $this->fluentlyGetOrSet('order')->args(func_get_args());
+    }
+
+    public function model(?Model $model = null)
+    {
+        return $this->fluentlyGetOrSet('model')->args(func_get_args());
+    }
+
+    public static function fromModel(Model $model): self
+    {
+        return (new static)
+            ->id($model->id)
+            ->source($model->source)
+            ->destination($model->destination)
+            ->regex($model->regex)
+            ->statusCode($model->status_code)
+            ->enabled($model->enabled)
+            ->order($model->order)
+            ->model($model);
+    }
+
+    public function toModel(): RedirectModel
+    {
+        $model = $this->model ?? new RedirectModel;
+
+        $model->fill([
+            'id'          => $this->id,
+            'source'      => $this->source,
+            'destination' => $this->destination,
+            'regex'       => $this->regex,
+            'status_code' => $this->statusCode,
+            'enabled'     => $this->enabled,
+            'order'       => $this->order ?? 0,
+        ]);
+
+        return $model;
     }
 
     public function isEnabled(): bool
@@ -127,13 +168,9 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
 
     protected function getCompiledPattern(): string
     {
-        if ($this->compiledPattern === null) {
-            $this->compiledPattern = $this->regex
-                ? $this->compileRegexPattern($this->source)
-                : $this->compileWildcardPattern($this->source);
-        }
-
-        return $this->compiledPattern;
+        return $this->regex
+            ? static::normalizeRegexPattern($this->source)
+            : $this->compileWildcardPattern($this->source);
     }
 
     protected function compileWildcardPattern(string $pattern): string
@@ -145,7 +182,7 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
         return '#^' . $escaped . '$#i';
     }
 
-    protected function compileRegexPattern(string $pattern): string
+    public static function normalizeRegexPattern(string $pattern): string
     {
         if (preg_match('/^[#\/~@!%].*[#\/~@!%][imsxADSUXu]*$/', $pattern)) {
             return $pattern;

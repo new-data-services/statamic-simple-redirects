@@ -1,0 +1,33 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        $table = config('statamic.redirects.database.table', 'redirects');
+
+        Schema::create($table, function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('source', 2048);
+            $table->string('destination', 2048);
+            $table->boolean('regex')->default(false);
+            $table->integer('status_code')->default(301);
+            $table->boolean('enabled')->default(true);
+            $table->integer('order')->default(0);
+            $table->timestamps();
+
+            $table->index('enabled');
+            $table->index('order');
+            $table->index(['enabled', 'order']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists(config('statamic.redirects.database.table', 'redirects'));
+    }
+};

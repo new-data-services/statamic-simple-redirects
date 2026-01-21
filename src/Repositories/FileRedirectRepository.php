@@ -10,21 +10,12 @@ use Ndx\SimpleRedirect\Data\Redirect as RedirectData;
 use Ndx\SimpleRedirect\Events\RedirectDeleted;
 use Ndx\SimpleRedirect\Events\RedirectSaved;
 use Ndx\SimpleRedirect\Stache\RedirectsStore;
+use Statamic\Facades\Blink;
 use Statamic\Stache\Stache;
 
 class FileRedirectRepository implements RedirectRepositoryContract
 {
     public function __construct(protected Stache $stache) {}
-
-    protected function store(): RedirectsStore
-    {
-        return $this->stache->store('redirects');
-    }
-
-    protected function treeRepository(): RedirectTreeRepository
-    {
-        return app(RedirectTreeRepository::class);
-    }
 
     public function all(): Collection
     {
@@ -50,18 +41,9 @@ class FileRedirectRepository implements RedirectRepositoryContract
 
     public function orderedEnabled(): Collection
     {
-        return $this->applyTreeOrder($this->enabled());
-    }
-
-    protected function applyTreeOrder(Collection $redirects): Collection
-    {
-        $tree = $this->treeRepository()->findOrCreate('redirects')->tree();
-
-        return collect($tree)
-            ->map(fn ($id) => $redirects->firstWhere('id', $id))
-            ->filter()
-            ->merge($redirects->whereNotIn('id', $tree))
-            ->values();
+        return Blink::once('simple-redirects-ordered-enabled', function () {
+            return $this->applyTreeOrder($this->enabled());
+        });
     }
 
     public function save(Redirect $redirect): bool
@@ -70,6 +52,8 @@ class FileRedirectRepository implements RedirectRepositoryContract
 
         $tree = $this->treeRepository()->findOrCreate('redirects');
         $tree->append($redirect->id())->save();
+
+        Blink::forget('simple-redirects-ordered-enabled');
 
         event(new RedirectSaved($redirect));
 
@@ -83,6 +67,8 @@ class FileRedirectRepository implements RedirectRepositoryContract
         $tree = $this->treeRepository()->findOrCreate('redirects');
         $tree->remove($redirect->id())->save();
 
+        Blink::forget('simple-redirects-ordered-enabled');
+
         event(new RedirectDeleted($redirect));
 
         return true;
@@ -91,5 +77,35 @@ class FileRedirectRepository implements RedirectRepositoryContract
     public function make(): Redirect
     {
         return new RedirectData;
+    }
+
+    public function reorder(array $ids): void
+    {
+        $tree = $this->treeRepository()->findOrCreate('redirects');
+        $tree->tree($ids)->save();
+
+        Blink::forget('simple-redirects-ordered-enabled');
+    }
+
+    protected function store(): RedirectsStore
+    {
+        return $this->stache->store('redirects');
+    }
+
+    protected function treeRepository(): RedirectTreeRepository
+    {
+        return app(RedirectTreeRepository::class);
+    }
+
+    protected function applyTreeOrder(Collection $redirects): Collection
+    {
+        $tree          = $this->treeRepository()->findOrCreate('redirects')->tree();
+        $redirectsById = $redirects->keyBy('id');
+
+        return collect($tree)
+            ->map(fn ($id) => $redirectsById->get($id))
+            ->filter()
+            ->merge($redirects->whereNotIn('id', $tree))
+            ->values();
     }
 }

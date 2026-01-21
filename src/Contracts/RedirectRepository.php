@@ -21,4 +21,6 @@ interface RedirectRepository
     public function delete(Redirect $redirect): bool;
 
     public function make(): Redirect;
+
+    public function reorder(array $ids): void;
 }

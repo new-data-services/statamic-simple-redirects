@@ -31,18 +31,33 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Stache Stores
+    | Stache Stores (File Driver)
     |--------------------------------------------------------------------------
     |
     | Configure the directories for the Stache stores used by the Simple
-    | Redirects addon. Each key is the store name, and the value is the
-    | directory path where the store files will be stored.
+    | Redirects addon when using the file driver. Each key is the store name,
+    | and the value is the directory path where the store files will be stored.
     |
     */
 
     'stores' => [
         'redirects'      => base_path('content/redirects'),
         'redirects-tree' => base_path('content/trees/redirects'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Database Configuration (Eloquent Driver)
+    |--------------------------------------------------------------------------
+    |
+    | Database connection and table name for the eloquent driver. When
+    | connection is null, the default Laravel database connection is used.
+    |
+    */
+
+    'database' => [
+        'connection' => env('REDIRECTS_DB_CONNECTION'),
+        'table'      => env('REDIRECTS_TABLE', 'redirects'),
     ],
 
 ];

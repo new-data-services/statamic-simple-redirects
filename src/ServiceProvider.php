@@ -8,6 +8,7 @@ use Ndx\SimpleRedirect\Actions\EnableRedirect;
 use Ndx\SimpleRedirect\Contracts\RedirectRepository;
 use Ndx\SimpleRedirect\Contracts\RedirectTreeRepository;
 use Ndx\SimpleRedirect\Http\Middleware\HandleRedirects;
+use Ndx\SimpleRedirect\Repositories\EloquentRedirectRepository;
 use Ndx\SimpleRedirect\Repositories\FileRedirectRepository;
 use Ndx\SimpleRedirect\Repositories\FileRedirectTreeRepository;
 use Ndx\SimpleRedirect\Stache\RedirectsStore;
@@ -44,13 +45,9 @@ class ServiceProvider extends AddonServiceProvider
 
     public function register(): void
     {
-        $this->app->singleton(RedirectRepository::class, function ($app) {
-            return new FileRedirectRepository($app['stache']);
-        });
+        $this->mergeConfigFrom(__DIR__ . '/../config/redirects.php', 'statamic.redirects');
 
-        $this->app->singleton(RedirectTreeRepository::class, function ($app) {
-            return new FileRedirectTreeRepository($app['stache']);
-        });
+        $this->registerRepositories();
     }
 
     public function bootAddon(): void
@@ -63,17 +60,36 @@ class ServiceProvider extends AddonServiceProvider
             ->bootRedirectConfig()
             ->bootRedirectTranslations()
             ->bootPermissions()
-            ->bootStache()
+            ->bootStorage()
             ->bootNavigation();
+    }
+
+    protected function registerRepositories(): void
+    {
+        if (config('statamic.redirects.driver', 'file') === 'eloquent') {
+            $this->app->singleton(RedirectRepository::class, EloquentRedirectRepository::class);
+
+            return;
+        }
+
+        $this->app->singleton(RedirectRepository::class, function ($app) {
+            return new FileRedirectRepository($app['stache']);
+        });
+
+        $this->app->singleton(RedirectTreeRepository::class, function ($app) {
+            return new FileRedirectTreeRepository($app['stache']);
+        });
     }
 
     protected function bootRedirectConfig(): self
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/redirects.php', 'statamic.redirects');
-
         $this->publishes([
             __DIR__ . '/../config/redirects.php' => config_path('statamic/redirects.php'),
         ], 'simple-redirects-config');
+
+        $this->publishes([
+            __DIR__ . '/../database/migrations/create_redirects_table.php.stub' => database_path('migrations/' . date('Y_m_d_His') . '_create_redirects_table.php'),
+        ], 'simple-redirects-migrations');
 
         return $this;
     }
@@ -97,7 +113,16 @@ class ServiceProvider extends AddonServiceProvider
         return $this;
     }
 
-    protected function bootStache(): self
+    protected function bootStorage(): self
+    {
+        if (config('statamic.redirects.driver', 'file') !== 'eloquent') {
+            $this->bootStache();
+        }
+
+        return $this;
+    }
+
+    protected function bootStache(): void
     {
         $stores = config('statamic.redirects.stores', []);
 
@@ -109,8 +134,6 @@ class ServiceProvider extends AddonServiceProvider
 
         app('stache')->registerStore($redirectsStore);
         app('stache')->registerStore($treeStore);
-
-        return $this;
     }
 
     protected function bootNavigation(): self
