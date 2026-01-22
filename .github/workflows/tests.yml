@@ -39,9 +39,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build assets
-        run: npm run prod
-
       - name: Run ESLint
         run: npm run lint
 
