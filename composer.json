@@ -31,7 +31,7 @@
     "scripts": {
         "phpcs": "vendor/bin/pint -v --test",
         "phpcs:fix": "vendor/bin/pint",
-        "test": "vendor/bin/pest"
+        "test": "vendor/bin/pest --parallel"
     },
     "extra": {
         "statamic": {
