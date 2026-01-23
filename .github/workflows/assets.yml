@@ -1,0 +1,34 @@
+name: Build Assets
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'resources/**'
+      - 'dist/**'
+
+jobs:
+  build-dist:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.4
+          tools: composer:v2
+          coverage: none
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '22.x'
+      - run: composer install --no-interaction --prefer-dist --optimize-autoloader
+      - run: yarn install
+      - run: yarn run prod
+      - uses: stefanzweifel/git-auto-commit-action@v6
+        with:
+          commit_message: "[skip ci] Build assets"
+          file_pattern: 'dist/*'
