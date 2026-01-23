@@ -1,14 +1,20 @@
 <?php
 
+use Illuminate\Routing\Router;
 use Illuminate\Support\Facades\Route;
 use Ndx\SimpleRedirect\Actions\DeleteRedirect;
 use Ndx\SimpleRedirect\Actions\DisableRedirect;
 use Ndx\SimpleRedirect\Actions\EnableRedirect;
 use Ndx\SimpleRedirect\Contracts\RedirectRepository;
 use Ndx\SimpleRedirect\Contracts\RedirectTreeRepository;
+use Ndx\SimpleRedirect\Events\RedirectDeleted;
+use Ndx\SimpleRedirect\Events\RedirectSaved;
+use Ndx\SimpleRedirect\Events\RedirectTreeSaved;
+use Ndx\SimpleRedirect\Http\Middleware\HandleRedirects;
 use Ndx\SimpleRedirect\Repositories\EloquentRedirectRepository;
 use Ndx\SimpleRedirect\Repositories\FileRedirectRepository;
 use Ndx\SimpleRedirect\Repositories\FileRedirectTreeRepository;
+use Statamic\Facades\Git;
 use Statamic\Facades\Permission;
 
 describe('feature flag', function () {
@@ -108,9 +114,23 @@ describe('routes', function () {
 
 describe('middleware', function () {
     it('registers HandleRedirects middleware in web group', function () {
-        $middleware = app(\Illuminate\Routing\Router::class)
+        $middleware = app(Router::class)
             ->getMiddlewareGroups()['web'];
 
-        expect($middleware)->toContain(\Ndx\SimpleRedirect\Http\Middleware\HandleRedirects::class);
+        expect($middleware)->toContain(HandleRedirects::class);
+    });
+});
+
+describe('git integration', function () {
+    it('registers git listeners for redirect events when git is enabled', function () {
+        config()->set('statamic.git.enabled', true);
+
+        Git::shouldReceive('listen')->with(RedirectSaved::class)->once();
+        Git::shouldReceive('listen')->with(RedirectDeleted::class)->once();
+        Git::shouldReceive('listen')->with(RedirectTreeSaved::class)->once();
+
+        $provider   = new \Ndx\SimpleRedirect\ServiceProvider(app());
+        $reflection = new \ReflectionMethod($provider, 'bootGitListeners');
+        $reflection->invoke($provider);
     });
 });

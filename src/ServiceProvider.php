@@ -7,6 +7,9 @@ use Ndx\SimpleRedirect\Actions\DisableRedirect;
 use Ndx\SimpleRedirect\Actions\EnableRedirect;
 use Ndx\SimpleRedirect\Contracts\RedirectRepository;
 use Ndx\SimpleRedirect\Contracts\RedirectTreeRepository;
+use Ndx\SimpleRedirect\Events\RedirectDeleted;
+use Ndx\SimpleRedirect\Events\RedirectSaved;
+use Ndx\SimpleRedirect\Events\RedirectTreeSaved;
 use Ndx\SimpleRedirect\Http\Middleware\HandleRedirects;
 use Ndx\SimpleRedirect\Repositories\EloquentRedirectRepository;
 use Ndx\SimpleRedirect\Repositories\FileRedirectRepository;
@@ -14,6 +17,7 @@ use Ndx\SimpleRedirect\Repositories\FileRedirectTreeRepository;
 use Ndx\SimpleRedirect\Stache\RedirectsStore;
 use Ndx\SimpleRedirect\Stache\RedirectsTreeStore;
 use Statamic\Facades\CP\Nav;
+use Statamic\Facades\Git;
 use Statamic\Facades\Permission;
 use Statamic\Providers\AddonServiceProvider;
 
@@ -61,7 +65,8 @@ class ServiceProvider extends AddonServiceProvider
             ->bootRedirectTranslations()
             ->bootPermissions()
             ->bootStorage()
-            ->bootNavigation();
+            ->bootNavigation()
+            ->bootGitListeners();
     }
 
     protected function registerRepositories(): void
@@ -144,6 +149,17 @@ class ServiceProvider extends AddonServiceProvider
                 ->icon('moved')
                 ->can('manage redirects');
         });
+
+        return $this;
+    }
+
+    protected function bootGitListeners(): self
+    {
+        if (config('statamic.git.enabled', false)) {
+            Git::listen(RedirectSaved::class);
+            Git::listen(RedirectDeleted::class);
+            Git::listen(RedirectTreeSaved::class);
+        }
 
         return $this;
     }

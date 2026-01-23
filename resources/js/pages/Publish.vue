@@ -61,7 +61,7 @@ function save() {
         .then((response) => {
             const message = props.isCreating
                 ? __('simple-redirects::messages.redirect_created')
-                : __('simple-redirects::messages.redirect_updated')
+                : __('simple-redirects::messages.redirect_saved')
 
             Statamic.$toast.success(message)
 

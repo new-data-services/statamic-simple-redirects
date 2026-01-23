@@ -3,7 +3,7 @@
 return [
     'redirects'           => 'Weiterleitungen',
     'redirect_created'    => 'Weiterleitung erstellt',
-    'redirect_updated'    => 'Weiterleitung aktualisiert',
+    'redirect_saved'      => 'Weiterleitung gespeichert',
     'redirect_deleted'    => 'Weiterleitung gelöscht',
     'redirects_reordered' => 'Sortierung gespeichert',
     'order_save_failed'   => 'Sortierung konnte nicht gespeichert werden',
