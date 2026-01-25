@@ -59,7 +59,6 @@ class RedirectController extends CpController
             'submitUrl'        => cp_route('simple-redirects.store'),
             'listingUrl'       => cp_route('simple-redirects.index'),
             'createAnotherUrl' => cp_route('simple-redirects.create'),
-            'editUrlTemplate'  => str_replace('__ID__', '{id}', cp_route('simple-redirects.edit', '__ID__')),
         ]);
     }
 
@@ -106,7 +105,7 @@ class RedirectController extends CpController
             'submitUrl'        => cp_route('simple-redirects.update', $id),
             'listingUrl'       => cp_route('simple-redirects.index'),
             'createAnotherUrl' => cp_route('simple-redirects.create'),
-            'editUrlTemplate'  => str_replace('__ID__', '{id}', cp_route('simple-redirects.edit', '__ID__')),
+            'deleteUrl'        => cp_route('simple-redirects.destroy', $id),
             'isCreating'       => false,
         ]);
     }
@@ -177,8 +176,9 @@ class RedirectController extends CpController
     protected function jsonResponse(RedirectContract $redirect): JsonResponse
     {
         return response()->json([
-            'saved' => true,
-            'data'  => [
+            'saved'    => true,
+            'redirect' => cp_route('simple-redirects.edit', $redirect->id()),
+            'data'     => [
                 'id'     => $redirect->id(),
                 'values' => [
                     'source'      => $redirect->source(),

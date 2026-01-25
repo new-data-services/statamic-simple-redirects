@@ -5,6 +5,7 @@ return [
     'redirect_created'    => 'Redirect created',
     'redirect_saved'      => 'Redirect saved',
     'redirect_deleted'    => 'Redirect deleted',
+    'delete_confirmation' => 'Are you sure you want to delete this redirect?',
     'redirects_reordered' => 'Redirects reordered',
     'order_save_failed'   => 'Failed to save order',
     'save_failed'         => 'Failed to save',

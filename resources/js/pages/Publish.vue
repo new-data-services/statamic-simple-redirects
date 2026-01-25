@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, getCurrentInstance, useTemplateRef } from 'vue'
 import { Head, router } from '@statamic/cms/inertia'
-import { Header, Button, ButtonGroup, PublishContainer, PublishTabs, Dropdown, DropdownMenu, DropdownLabel, Radio, RadioGroup } from '@statamic/cms/ui'
+import { Header, Button, ButtonGroup, PublishContainer, PublishTabs, Dropdown, DropdownMenu, DropdownLabel, DropdownItem, ConfirmationModal, Radio, RadioGroup } from '@statamic/cms/ui'
 import { Pipeline, Request, BeforeSaveHooks, AfterSaveHooks } from '@statamic/cms/save-pipeline'
 
 const props = defineProps({
@@ -13,7 +13,7 @@ const props = defineProps({
     submitUrl: String,
     listingUrl: String,
     createAnotherUrl: String,
-    editUrlTemplate: String,
+    deleteUrl: String,
     isCreating: { type: Boolean, default: true },
 })
 
@@ -23,6 +23,8 @@ const formValues = ref(props.values)
 const formMeta = ref(props.meta)
 const errors = ref({})
 const saving = ref(false)
+const showDeleteConfirmation = ref(false)
+const deleting = ref(false)
 
 const preferencesKey = 'redirects.after_save'
 const afterSaveOption = ref('listing')
@@ -50,6 +52,21 @@ watch(afterSaveOption, (value) => {
         : instance.proxy.$preferences.set(preferencesKey, value)
 })
 
+function deleteRedirect() {
+    deleting.value = true
+
+    instance.proxy.$axios.delete(props.deleteUrl)
+        .then(() => {
+            Statamic.$toast.success(__('simple-redirects::messages.redirect_deleted'))
+            router.visit(props.listingUrl)
+        })
+        .catch(() => {
+            Statamic.$toast.error(__('Something went wrong'))
+            deleting.value = false
+            showDeleteConfirmation.value = false
+        })
+}
+
 function save() {
     new Pipeline()
         .provide({ container, errors, saving })
@@ -72,8 +89,8 @@ function save() {
             }
 
             if (afterSaveOption.value === 'continue_editing') {
-                if (props.isCreating && response.data.data.id) {
-                    router.visit(props.editUrlTemplate.replace('{id}', response.data.data.id))
+                if (props.isCreating && response.data.redirect) {
+                    router.visit(response.data.redirect)
                 }
 
                 return
@@ -88,6 +105,21 @@ function save() {
     <Head :title="title" />
 
     <Header :title="title" :icon="icon">
+        <Dropdown v-if="! isCreating" align="end">
+            <template #trigger>
+                <Button icon="dots" variant="ghost" :aria-label="__('Open dropdown menu')" />
+            </template>
+
+            <DropdownMenu>
+                <DropdownItem
+                    :text="__('Delete')"
+                    icon="trash"
+                    variant="destructive"
+                    @click="showDeleteConfirmation = true"
+                />
+            </DropdownMenu>
+        </Dropdown>
+
         <ButtonGroup>
             <Button
                 variant="primary"
@@ -124,4 +156,14 @@ function save() {
     >
         <PublishTabs />
     </PublishContainer>
+
+    <ConfirmationModal
+        v-model:open="showDeleteConfirmation"
+        :title="__('Delete')"
+        :body-text="__('simple-redirects::messages.delete_confirmation')"
+        :button-text="__('Delete')"
+        :busy="deleting"
+        danger
+        @confirm="deleteRedirect"
+    />
 </template>

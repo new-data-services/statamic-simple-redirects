@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, getCurrentInstance } from 'vue'
 import { Head, router } from '@statamic/cms/inertia'
 import { Header, Button, Listing, StatusIndicator, Badge, DropdownItem } from '@statamic/cms/ui'
 
@@ -12,6 +12,7 @@ const props = defineProps({
     actionUrl: String,
 })
 
+const instance = getCurrentInstance()
 const reordering = ref(false)
 const reorderedItems = ref(null)
 const listingKey = ref(0)
@@ -20,7 +21,7 @@ function handleReordered(items) {
     reorderedItems.value = items
 }
 
-async function saveOrder() {
+function saveOrder() {
     if (! reorderedItems.value) {
         reordering.value = false
 
@@ -29,27 +30,15 @@ async function saveOrder() {
 
     const order = reorderedItems.value.map(item => item.id)
 
-    try {
-        const response = await fetch(props.reorderUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': Statamic.$config.get('csrfToken'),
-            },
-            body: JSON.stringify({ order }),
+    instance.proxy.$axios.post(props.reorderUrl, { order })
+        .then(() => {
+            Statamic.$toast.success(__('simple-redirects::messages.redirects_reordered'))
+            reorderedItems.value = null
+            reordering.value = false
         })
-
-        if (! response.ok) {
-            throw new Error('Failed to save order')
-        }
-
-        Statamic.$toast.success(__('simple-redirects::messages.redirects_reordered'))
-        reorderedItems.value = null
-        reordering.value = false
-    } catch (error) {
-        Statamic.$toast.error(__('simple-redirects::messages.order_save_failed'))
-        console.error('Save order error:', error)
-    }
+        .catch(() => {
+            Statamic.$toast.error(__('simple-redirects::messages.order_save_failed'))
+        })
 }
 
 function cancelReorder() {

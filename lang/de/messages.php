@@ -5,6 +5,7 @@ return [
     'redirect_created'    => 'Weiterleitung erstellt',
     'redirect_saved'      => 'Weiterleitung gespeichert',
     'redirect_deleted'    => 'Weiterleitung gelöscht',
+    'delete_confirmation' => 'Möchtest du diese Weiterleitung wirklich löschen?',
     'redirects_reordered' => 'Sortierung gespeichert',
     'order_save_failed'   => 'Sortierung konnte nicht gespeichert werden',
     'save_failed'         => 'Speichern fehlgeschlagen',
