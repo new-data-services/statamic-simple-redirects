@@ -10,6 +10,7 @@ use Statamic\Contracts\Data\Augmentable;
 use Statamic\Contracts\Data\Augmented;
 use Statamic\Data\ExistsAsFile;
 use Statamic\Data\HasAugmentedInstance;
+use Statamic\Facades\Site;
 use Statamic\Facades\Stache;
 use Statamic\Support\Str;
 use Statamic\Support\Traits\FluentlyGetsAndSets;
@@ -31,6 +32,8 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
     protected bool $enabled = true;
 
     protected ?int $order = null;
+
+    protected ?array $sites = null;
 
     protected ?Model $model = null;
 
@@ -91,6 +94,30 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
         return $this->fluentlyGetOrSet('model')->args(func_get_args());
     }
 
+    public function sites(?array $sites = null)
+    {
+        return $this->fluentlyGetOrSet('sites')
+            ->getter(function ($sites) {
+                if (! Site::multiEnabled()) {
+                    return null;
+                }
+
+                return $sites;
+            })
+            ->args(func_get_args());
+    }
+
+    public function appliesToSite(string $siteHandle): bool
+    {
+        $sites = $this->sites();
+
+        if (empty($sites)) {
+            return true;
+        }
+
+        return in_array($siteHandle, $sites, true);
+    }
+
     public static function fromModel(Model $model): self
     {
         return (new static)
@@ -101,6 +128,7 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
             ->statusCode($model->status_code)
             ->enabled($model->enabled)
             ->order($model->order)
+            ->sites($model->sites)
             ->model($model);
     }
 
@@ -116,6 +144,7 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
             'status_code' => $this->statusCode,
             'enabled'     => $this->enabled,
             'order'       => $this->order ?? 0,
+            'sites'       => $this->sites,
         ]);
 
         return $model;
@@ -223,6 +252,7 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
             'regex'       => $this->regex,
             'status_code' => $this->statusCode,
             'enabled'     => $this->enabled,
+            'sites'       => $this->sites,
         ];
     }
 
@@ -240,6 +270,10 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
 
         if (! $this->enabled) {
             $data['enabled'] = false;
+        }
+
+        if (Site::multiEnabled() && ! empty($this->sites)) {
+            $data['sites'] = $this->sites;
         }
 
         return $data;

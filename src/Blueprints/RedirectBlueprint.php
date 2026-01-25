@@ -5,6 +5,7 @@ namespace Ndx\SimpleRedirect\Blueprints;
 use Ndx\SimpleRedirect\Rules\ValidRedirectDestination;
 use Ndx\SimpleRedirect\Rules\ValidRedirectSource;
 use Statamic\Facades\Blueprint;
+use Statamic\Facades\Site;
 use Statamic\Fields\Blueprint as BlueprintInstance;
 
 class RedirectBlueprint
@@ -68,7 +69,7 @@ class RedirectBlueprint
                     'display'  => __('Sidebar'),
                     'sections' => [
                         [
-                            'fields' => [
+                            'fields' => array_values(array_filter([
                                 [
                                     'handle' => 'enabled',
                                     'field'  => [
@@ -77,11 +78,28 @@ class RedirectBlueprint
                                         'default' => true,
                                     ],
                                 ],
-                            ],
+                                $this->sitesField(),
+                            ])),
                         ],
                     ],
                 ],
             ],
         ])->setHandle('redirect');
+    }
+
+    protected function sitesField(): ?array
+    {
+        if (! Site::multiEnabled()) {
+            return null;
+        }
+
+        return [
+            'handle' => 'sites',
+            'field'  => [
+                'type'    => 'sites',
+                'display' => __('simple-redirects::messages.sites'),
+                'mode'    => 'select',
+            ],
+        ];
     }
 }

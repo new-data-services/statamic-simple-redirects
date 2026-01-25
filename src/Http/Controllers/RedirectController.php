@@ -10,6 +10,7 @@ use Ndx\SimpleRedirect\Blueprints\RedirectBlueprint;
 use Ndx\SimpleRedirect\Contracts\Redirect as RedirectContract;
 use Ndx\SimpleRedirect\Contracts\RedirectRepository;
 use Ndx\SimpleRedirect\Facades\Redirect;
+use Statamic\Facades\Site;
 use Statamic\Http\Controllers\CP\CpController;
 
 class RedirectController extends CpController
@@ -25,21 +26,23 @@ class RedirectController extends CpController
             'regex'       => $r->isRegex(),
             'status_code' => $r->statusCode(),
             'enabled'     => $r->isEnabled(),
+            'sites'       => $r->sites(),
             'edit_url'    => cp_route('simple-redirects.edit', $r->id()),
         ])->values();
 
         return Inertia::render('simple-redirects::Index', [
-            'title'      => __('Redirects'),
-            'redirects'  => $redirects,
-            'columns'    => [
+            'title'            => __('Redirects'),
+            'redirects'        => $redirects,
+            'columns'          => [
                 ['field' => 'source', 'label' => __('Source'), 'width' => '40%'],
                 ['field' => 'destination', 'label' => __('Destination'), 'width' => '40%'],
                 ['field' => 'regex', 'label' => '', 'width' => '10%'],
                 ['field' => 'status_code', 'label' => __('Code'), 'width' => '10%'],
             ],
-            'createUrl'  => cp_route('simple-redirects.create'),
-            'reorderUrl' => cp_route('simple-redirects.reorder'),
-            'actionUrl'  => cp_route('simple-redirects.actions.run'),
+            'createUrl'        => cp_route('simple-redirects.create'),
+            'reorderUrl'       => cp_route('simple-redirects.reorder'),
+            'actionUrl'        => cp_route('simple-redirects.actions.run'),
+            'multiSiteEnabled' => Site::multiEnabled(),
         ]);
     }
 
@@ -92,6 +95,7 @@ class RedirectController extends CpController
             'regex'       => $redirect->isRegex(),
             'status_code' => (string) $redirect->statusCode(),
             'enabled'     => $redirect->isEnabled(),
+            'sites'       => $redirect->sites(),
         ];
 
         $fields = $blueprint->fields()->addValues($values)->preProcess();
@@ -170,7 +174,8 @@ class RedirectController extends CpController
             ->source($values['source'])
             ->destination($values['destination'] ?? '')
             ->statusCode((int) $values['status_code'])
-            ->enabled($values['enabled'] ?? true);
+            ->enabled($values['enabled'] ?? true)
+            ->sites($values['sites'] ?? null);
     }
 
     protected function jsonResponse(RedirectContract $redirect): JsonResponse
@@ -186,6 +191,7 @@ class RedirectController extends CpController
                     'regex'       => $redirect->isRegex(),
                     'status_code' => (string) $redirect->statusCode(),
                     'enabled'     => $redirect->isEnabled(),
+                    'sites'       => $redirect->sites(),
                 ],
                 'extraValues' => [],
             ],

@@ -22,6 +22,10 @@ interface Redirect
 
     public function isRegex(): bool;
 
+    public function sites(?array $sites = null);
+
+    public function appliesToSite(string $siteHandle): bool;
+
     public function matches(string $url): bool;
 
     public function buildDestination(string $matchedUrl): string;

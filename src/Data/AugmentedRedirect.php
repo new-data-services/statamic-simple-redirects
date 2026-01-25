@@ -8,6 +8,6 @@ class AugmentedRedirect extends AbstractAugmented
 {
     public function keys(): array
     {
-        return ['id', 'source', 'destination', 'regex', 'status_code', 'enabled'];
+        return ['id', 'source', 'destination', 'regex', 'status_code', 'enabled', 'sites'];
     }
 }

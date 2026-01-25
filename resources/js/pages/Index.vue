@@ -10,6 +10,7 @@ const props = defineProps({
     createUrl: String,
     reorderUrl: String,
     actionUrl: String,
+    multiSiteEnabled: Boolean,
 })
 
 const instance = getCurrentInstance()
@@ -91,6 +92,10 @@ function cancelReorder() {
                     <StatusIndicator :status="row.enabled ? 'published' : 'draft'" />
 
                     <a :href="row.edit_url" class="slug-index-field">{{ value }}</a>
+
+                    <template v-if="multiSiteEnabled && row.sites?.length">
+                        <Badge v-for="site in row.sites" :key="site">{{ site }}</Badge>
+                    </template>
                 </div>
             </template>
 

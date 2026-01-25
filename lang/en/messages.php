@@ -2,6 +2,7 @@
 
 return [
     'redirects'           => 'Redirects',
+    'sites'               => 'Sites',
     'redirect_created'    => 'Redirect created',
     'redirect_saved'      => 'Redirect saved',
     'redirect_deleted'    => 'Redirect deleted',
@@ -15,6 +16,7 @@ return [
         'source'      => 'The URL path to redirect from. Use * as wildcard (e.g., /blog/*).',
         'destination' => 'The URL to redirect to. Use $1, $2, etc. for captured wildcards.',
         'regex'       => 'Enable regular expression support (advanced).',
+        'sites'       => 'Leave empty to apply to all sites, or select specific sites.',
     ],
 
     'validation' => [
