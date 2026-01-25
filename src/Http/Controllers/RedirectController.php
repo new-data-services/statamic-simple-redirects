@@ -32,8 +32,9 @@ class RedirectController extends CpController
             'title'      => __('Redirects'),
             'redirects'  => $redirects,
             'columns'    => [
-                ['field' => 'source', 'label' => __('Source'), 'width' => '45%'],
-                ['field' => 'destination', 'label' => __('Destination'), 'width' => '45%'],
+                ['field' => 'source', 'label' => __('Source'), 'width' => '40%'],
+                ['field' => 'destination', 'label' => __('Destination'), 'width' => '40%'],
+                ['field' => 'regex', 'label' => '', 'width' => '10%'],
                 ['field' => 'status_code', 'label' => __('Code'), 'width' => '10%'],
             ],
             'createUrl'  => cp_route('simple-redirects.create'),

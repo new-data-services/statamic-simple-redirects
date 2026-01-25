@@ -113,6 +113,10 @@ function cancelReorder() {
                 <Badge>{{ value }}</Badge>
             </template>
 
+            <template #cell-regex="{ value }">
+                <Badge v-if="value">Regex</Badge>
+            </template>
+
             <template #cell-status_code="{ value }">
                 <Badge>{{ value }}</Badge>
             </template>
