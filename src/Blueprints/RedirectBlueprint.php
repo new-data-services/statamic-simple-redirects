@@ -100,7 +100,7 @@ class RedirectBlueprint
                     'handle' => 'sites',
                     'field'  => [
                         'type'         => 'sites',
-                        'display'      => __('simple-redirects::messages.sites'),
+                        'display'      => __('Sites'),
                         'instructions' => __('simple-redirects::messages.instructions.sites'),
                         'mode'         => 'select',
                         'default'      => Site::all()->keys()->all(),

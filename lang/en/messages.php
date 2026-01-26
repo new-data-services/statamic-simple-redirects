@@ -2,7 +2,6 @@
 
 return [
     'redirects'           => 'Redirects',
-    'sites'               => 'Sites',
     'redirect_created'    => 'Redirect created',
     'redirect_saved'      => 'Redirect saved',
     'redirect_deleted'    => 'Redirect deleted',

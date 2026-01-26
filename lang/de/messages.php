@@ -2,7 +2,6 @@
 
 return [
     'redirects'           => 'Weiterleitungen',
-    'sites'               => 'Seiten',
     'redirect_created'    => 'Weiterleitung erstellt',
     'redirect_saved'      => 'Weiterleitung gespeichert',
     'redirect_deleted'    => 'Weiterleitung gelöscht',
