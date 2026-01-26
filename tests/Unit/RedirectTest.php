@@ -2,6 +2,8 @@
 
 use Ndx\SimpleRedirect\Data\Redirect;
 use Ndx\SimpleRedirect\Models\Redirect as RedirectModel;
+use Statamic\Facades\Site;
+use Statamic\Sites\Site as SiteInstance;
 
 describe('fluent getters and setters', function () {
     it('generates uuid on construction', function () {
@@ -527,6 +529,40 @@ describe('sites in file data', function () {
             ->sites(['en']);
 
         expect($redirect->fileData())->not->toHaveKey('sites');
+    });
+
+    it('omits sites from file data when all sites are selected', function () {
+        config()->set('statamic.system.multisite', true);
+
+        Site::setSites(collect([
+            'en' => new SiteInstance('en', ['name' => 'English', 'url' => '/', 'locale' => 'en']),
+            'de' => new SiteInstance('de', ['name' => 'German', 'url' => '/de/', 'locale' => 'de']),
+            'fr' => new SiteInstance('fr', ['name' => 'French', 'url' => '/fr/', 'locale' => 'fr']),
+        ]));
+
+        $redirect = (new Redirect)
+            ->source('/old')
+            ->destination('/new')
+            ->sites(['en', 'de', 'fr']);
+
+        expect($redirect->fileData())->not->toHaveKey('sites');
+    });
+
+    it('includes sites in file data when only some sites are selected', function () {
+        config()->set('statamic.system.multisite', true);
+
+        Site::setSites(collect([
+            'en' => new SiteInstance('en', ['name' => 'English', 'url' => '/', 'locale' => 'en']),
+            'de' => new SiteInstance('de', ['name' => 'German', 'url' => '/de/', 'locale' => 'de']),
+            'fr' => new SiteInstance('fr', ['name' => 'French', 'url' => '/fr/', 'locale' => 'fr']),
+        ]));
+
+        $redirect = (new Redirect)
+            ->source('/old')
+            ->destination('/new')
+            ->sites(['en', 'de']);
+
+        expect($redirect->fileData())->toHaveKey('sites', ['en', 'de']);
     });
 });
 

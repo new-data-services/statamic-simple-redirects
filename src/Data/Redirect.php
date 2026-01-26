@@ -272,11 +272,23 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
             $data['enabled'] = false;
         }
 
-        if (Site::multiEnabled() && ! empty($this->sites)) {
+        if (Site::multiEnabled() && $this->hasPartialSiteSelection()) {
             $data['sites'] = $this->sites;
         }
 
         return $data;
+    }
+
+    protected function hasPartialSiteSelection(): bool
+    {
+        if (empty($this->sites)) {
+            return false;
+        }
+
+        $allSiteHandles = Site::all()->keys()->sort()->values()->all();
+        $selectedSites  = collect($this->sites)->sort()->values()->all();
+
+        return $selectedSites !== $allSiteHandles;
     }
 
     public function augmentedArrayData(): array

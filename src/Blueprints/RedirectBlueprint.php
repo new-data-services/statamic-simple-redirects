@@ -67,38 +67,45 @@ class RedirectBlueprint
                 ],
                 'sidebar' => [
                     'display'  => __('Sidebar'),
-                    'sections' => [
+                    'sections' => array_filter([
                         [
-                            'fields' => array_values(array_filter([
+                            'fields' => [
                                 [
                                     'handle' => 'enabled',
                                     'field'  => [
-                                        'type'    => 'toggle',
-                                        'display' => __('Enabled'),
-                                        'default' => true,
+                                        'type'         => 'toggle',
+                                        'display'      => __('Enabled'),
+                                        'instructions' => __('simple-redirects::messages.instructions.enabled'),
+                                        'default'      => true,
                                     ],
                                 ],
-                                $this->sitesField(),
-                            ])),
+                            ],
                         ],
-                    ],
+                        $this->sitesSection(),
+                    ]),
                 ],
             ],
         ])->setHandle('redirect');
     }
 
-    protected function sitesField(): ?array
+    protected function sitesSection(): ?array
     {
         if (! Site::multiEnabled()) {
             return null;
         }
 
         return [
-            'handle' => 'sites',
-            'field'  => [
-                'type'    => 'sites',
-                'display' => __('simple-redirects::messages.sites'),
-                'mode'    => 'select',
+            'fields' => [
+                [
+                    'handle' => 'sites',
+                    'field'  => [
+                        'type'         => 'sites',
+                        'display'      => __('simple-redirects::messages.sites'),
+                        'instructions' => __('simple-redirects::messages.instructions.sites'),
+                        'mode'         => 'select',
+                        'default'      => Site::all()->keys()->all(),
+                    ],
+                ],
             ],
         ];
     }

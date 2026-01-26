@@ -16,7 +16,8 @@ return [
         'source'      => 'The URL path to redirect from. Use * as wildcard (e.g., /blog/*).',
         'destination' => 'The URL to redirect to. Use $1, $2, etc. for captured wildcards.',
         'regex'       => 'Enable regular expression support (advanced).',
-        'sites'       => 'Leave empty to apply to all sites, or select specific sites.',
+        'enabled'     => 'Whether this redirect is active.',
+        'sites'       => 'Restrict this redirect to specific sites.',
     ],
 
     'validation' => [
