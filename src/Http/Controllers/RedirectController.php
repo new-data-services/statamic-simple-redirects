@@ -19,30 +19,32 @@ class RedirectController extends CpController
     {
         $this->authorize('manage redirects');
 
-        $redirects = Redirect::ordered()->map(fn ($r) => [
-            'id'          => $r->id(),
-            'source'      => $r->source(),
-            'destination' => $r->destination(),
-            'regex'       => $r->isRegex(),
-            'status_code' => $r->statusCode(),
-            'enabled'     => $r->isEnabled(),
-            'sites'       => $r->sites(),
-            'edit_url'    => cp_route('simple-redirects.edit', $r->id()),
+        $redirects = Redirect::ordered()->map(fn ($redirect) => [
+            'id'          => $redirect->id(),
+            'source'      => $redirect->source(),
+            'destination' => $redirect->destination(),
+            'regex'       => $redirect->isRegex(),
+            'status_code' => $redirect->statusCode(),
+            'enabled'     => $redirect->isEnabled(),
+            'sites'       => $this->formatSitesForListing($redirect->sites()),
+            'edit_url'    => cp_route('simple-redirects.edit', $redirect->id()),
         ])->values();
 
+        $columns = array_values(array_filter([
+            ['field' => 'source', 'label' => __('Source'), 'visible' => true, 'defaultVisibility' => true, 'defaultOrder' => 1],
+            ['field' => 'destination', 'label' => __('Destination'), 'visible' => true, 'defaultVisibility' => true, 'defaultOrder' => 2],
+            Site::multiEnabled() ? ['field' => 'sites', 'label' => __('Sites'), 'visible' => false, 'defaultVisibility' => false, 'defaultOrder' => 3] : null,
+            ['field' => 'regex', 'label' => __('Regex'), 'visible' => true, 'defaultVisibility' => true, 'defaultOrder' => 4],
+            ['field' => 'status_code', 'label' => __('Code'), 'visible' => true, 'defaultVisibility' => true, 'defaultOrder' => 5],
+        ]));
+
         return Inertia::render('simple-redirects::Index', [
-            'title'            => __('Redirects'),
-            'redirects'        => $redirects,
-            'columns'          => [
-                ['field' => 'source', 'label' => __('Source'), 'width' => '40%'],
-                ['field' => 'destination', 'label' => __('Destination'), 'width' => '40%'],
-                ['field' => 'regex', 'label' => '', 'width' => '10%'],
-                ['field' => 'status_code', 'label' => __('Code'), 'width' => '10%'],
-            ],
-            'createUrl'        => cp_route('simple-redirects.create'),
-            'reorderUrl'       => cp_route('simple-redirects.reorder'),
-            'actionUrl'        => cp_route('simple-redirects.actions.run'),
-            'multiSiteEnabled' => Site::multiEnabled(),
+            'title'      => __('Redirects'),
+            'redirects'  => $redirects,
+            'columns'    => $columns,
+            'createUrl'  => cp_route('simple-redirects.create'),
+            'reorderUrl' => cp_route('simple-redirects.reorder'),
+            'actionUrl'  => cp_route('simple-redirects.actions.run'),
         ]);
     }
 
@@ -196,5 +198,19 @@ class RedirectController extends CpController
                 'extraValues' => [],
             ],
         ]);
+    }
+
+    protected function formatSitesForListing(?array $sites): string
+    {
+        $allSites = Site::all();
+
+        if (empty($sites) || count($sites) === $allSites->count()) {
+            return $allSites->map(fn ($site) => $site->name())->implode(', ');
+        }
+
+        return $allSites
+            ->only($sites)
+            ->map(fn ($site) => $site->name())
+            ->implode(', ');
     }
 }
