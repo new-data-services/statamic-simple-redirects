@@ -106,4 +106,4 @@ jobs:
         run: composer update --no-interaction --${{ matrix.dependency-version }} --prefer-dist
 
       - name: Run tests
-        run: composer test
+        run: vendor/bin/pest
