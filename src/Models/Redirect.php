@@ -31,6 +31,7 @@ class Redirect extends Model
             'enabled'     => 'boolean',
             'status_code' => 'integer',
             'order'       => 'integer',
+            'sites'       => 'array',
         ];
     }
 }

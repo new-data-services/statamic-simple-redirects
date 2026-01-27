@@ -18,6 +18,7 @@ return new class extends Migration
             $table->integer('status_code')->default(301);
             $table->boolean('enabled')->default(true);
             $table->integer('order')->default(0);
+            $table->json('sites')->nullable();
             $table->timestamps();
 
             $table->index('enabled');

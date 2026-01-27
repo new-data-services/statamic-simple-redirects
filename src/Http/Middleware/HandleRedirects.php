@@ -6,6 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Ndx\SimpleRedirect\Contracts\Redirect as RedirectContract;
 use Ndx\SimpleRedirect\Facades\Redirect;
+use Statamic\Facades\Site;
 use Symfony\Component\HttpFoundation\Response;
 
 class HandleRedirects
@@ -33,7 +34,13 @@ class HandleRedirects
 
     protected function findMatchingRedirect(string $url): ?RedirectContract
     {
+        $currentSite = Site::current()->handle();
+
         foreach (Redirect::orderedEnabled() as $redirect) {
+            if (! $redirect->appliesToSite($currentSite)) {
+                continue;
+            }
+
             if ($redirect->matches($url)) {
                 return $redirect;
             }

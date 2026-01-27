@@ -26,7 +26,7 @@ const saving = ref(false)
 const showDeleteConfirmation = ref(false)
 const deleting = ref(false)
 
-const preferencesKey = 'redirects.after_save'
+const preferencesKey = 'simple-redirects.after_save'
 const afterSaveOption = ref('listing')
 
 let saveKeyBinding

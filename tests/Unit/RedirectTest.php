@@ -2,6 +2,8 @@
 
 use Ndx\SimpleRedirect\Data\Redirect;
 use Ndx\SimpleRedirect\Models\Redirect as RedirectModel;
+use Statamic\Facades\Site;
+use Statamic\Sites\Site as SiteInstance;
 
 describe('fluent getters and setters', function () {
     it('generates uuid on construction', function () {
@@ -255,6 +257,7 @@ describe('serialization', function () {
             'regex'       => true,
             'status_code' => 302,
             'enabled'     => false,
+            'sites'       => null,
         ]);
     });
 
@@ -376,5 +379,210 @@ describe('model conversion', function () {
         $model = $redirect->toModel();
 
         expect($model->order)->toBe(0);
+    });
+
+    it('creates redirect from eloquent model with sites', function () {
+        config()->set('statamic.system.multisite', true);
+
+        $model = new RedirectModel;
+        $model->forceFill([
+            'id'          => 'model-id',
+            'source'      => '/from-model',
+            'destination' => '/to-model',
+            'regex'       => false,
+            'status_code' => 301,
+            'enabled'     => true,
+            'order'       => 0,
+            'sites'       => ['en', 'de'],
+        ]);
+
+        $redirect = Redirect::fromModel($model);
+
+        expect($redirect->sites())->toBe(['en', 'de']);
+    });
+
+    it('converts redirect with sites to eloquent model', function () {
+        $redirect = (new Redirect)
+            ->id('redirect-id')
+            ->source('/test')
+            ->destination('/dest')
+            ->sites(['en']);
+
+        $model = $redirect->toModel();
+
+        expect($model->sites)->toBe(['en']);
+    });
+});
+
+describe('sites property', function () {
+    it('can get and set sites when multisite enabled', function () {
+        config()->set('statamic.system.multisite', true);
+
+        $redirect = new Redirect;
+        $redirect->sites(['en', 'de']);
+
+        expect($redirect->sites())->toBe(['en', 'de']);
+    });
+
+    it('returns null when sites not set and multisite enabled', function () {
+        config()->set('statamic.system.multisite', true);
+
+        $redirect = new Redirect;
+
+        expect($redirect->sites())->toBeNull();
+    });
+
+    it('returns null when multisite is disabled even if sites are set', function () {
+        config()->set('statamic.system.multisite', false);
+
+        $redirect = (new Redirect)->sites(['en', 'de']);
+
+        expect($redirect->sites())->toBeNull();
+    });
+
+    it('returns sites when multisite is enabled', function () {
+        config()->set('statamic.system.multisite', true);
+
+        $redirect = (new Redirect)->sites(['en']);
+
+        expect($redirect->sites())->toBe(['en']);
+    });
+});
+
+describe('appliesToSite', function () {
+    it('applies to any site when sites is null', function () {
+        $redirect = new Redirect;
+
+        expect($redirect->appliesToSite('en'))->toBeTrue();
+        expect($redirect->appliesToSite('de'))->toBeTrue();
+        expect($redirect->appliesToSite('any'))->toBeTrue();
+    });
+
+    it('applies to any site when sites is empty array', function () {
+        config()->set('statamic.system.multisite', true);
+
+        $redirect = (new Redirect)->sites([]);
+
+        expect($redirect->appliesToSite('en'))->toBeTrue();
+        expect($redirect->appliesToSite('de'))->toBeTrue();
+    });
+
+    it('applies only to specified sites when multisite enabled', function () {
+        config()->set('statamic.system.multisite', true);
+
+        $redirect = (new Redirect)->sites(['en']);
+
+        expect($redirect->appliesToSite('en'))->toBeTrue();
+        expect($redirect->appliesToSite('de'))->toBeFalse();
+    });
+
+    it('applies to all sites when multisite is disabled', function () {
+        config()->set('statamic.system.multisite', false);
+
+        $redirect = (new Redirect)->sites(['en']);
+
+        expect($redirect->appliesToSite('en'))->toBeTrue();
+        expect($redirect->appliesToSite('de'))->toBeTrue();
+    });
+});
+
+describe('sites in file data', function () {
+    it('omits sites from file data when null', function () {
+        config()->set('statamic.system.multisite', true);
+
+        $redirect = (new Redirect)
+            ->source('/old')
+            ->destination('/new')
+            ->sites(null);
+
+        expect($redirect->fileData())->not->toHaveKey('sites');
+    });
+
+    it('omits sites from file data when empty array', function () {
+        config()->set('statamic.system.multisite', true);
+
+        $redirect = (new Redirect)
+            ->source('/old')
+            ->destination('/new')
+            ->sites([]);
+
+        expect($redirect->fileData())->not->toHaveKey('sites');
+    });
+
+    it('includes sites in file data when restricted and multisite enabled', function () {
+        config()->set('statamic.system.multisite', true);
+
+        $redirect = (new Redirect)
+            ->source('/old')
+            ->destination('/new')
+            ->sites(['en', 'de']);
+
+        expect($redirect->fileData())->toHaveKey('sites', ['en', 'de']);
+    });
+
+    it('omits sites from file data when multisite is disabled', function () {
+        config()->set('statamic.system.multisite', false);
+
+        $redirect = (new Redirect)
+            ->source('/old')
+            ->destination('/new')
+            ->sites(['en']);
+
+        expect($redirect->fileData())->not->toHaveKey('sites');
+    });
+
+    it('omits sites from file data when all sites are selected', function () {
+        config()->set('statamic.system.multisite', true);
+
+        Site::setSites(collect([
+            'en' => new SiteInstance('en', ['name' => 'English', 'url' => '/', 'locale' => 'en']),
+            'de' => new SiteInstance('de', ['name' => 'German', 'url' => '/de/', 'locale' => 'de']),
+            'fr' => new SiteInstance('fr', ['name' => 'French', 'url' => '/fr/', 'locale' => 'fr']),
+        ]));
+
+        $redirect = (new Redirect)
+            ->source('/old')
+            ->destination('/new')
+            ->sites(['en', 'de', 'fr']);
+
+        expect($redirect->fileData())->not->toHaveKey('sites');
+    });
+
+    it('includes sites in file data when only some sites are selected', function () {
+        config()->set('statamic.system.multisite', true);
+
+        Site::setSites(collect([
+            'en' => new SiteInstance('en', ['name' => 'English', 'url' => '/', 'locale' => 'en']),
+            'de' => new SiteInstance('de', ['name' => 'German', 'url' => '/de/', 'locale' => 'de']),
+            'fr' => new SiteInstance('fr', ['name' => 'French', 'url' => '/fr/', 'locale' => 'fr']),
+        ]));
+
+        $redirect = (new Redirect)
+            ->source('/old')
+            ->destination('/new')
+            ->sites(['en', 'de']);
+
+        expect($redirect->fileData())->toHaveKey('sites', ['en', 'de']);
+    });
+});
+
+describe('sites in toArray', function () {
+    it('includes sites in array representation', function () {
+        $redirect = (new Redirect)
+            ->id('test-id')
+            ->source('/old')
+            ->destination('/new')
+            ->sites(['en']);
+
+        expect($redirect->toArray())->toHaveKey('sites', ['en']);
+    });
+
+    it('includes null sites in array representation', function () {
+        $redirect = (new Redirect)
+            ->id('test-id')
+            ->source('/old')
+            ->destination('/new');
+
+        expect($redirect->toArray())->toHaveKey('sites', null);
     });
 });

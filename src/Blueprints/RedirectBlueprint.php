@@ -5,6 +5,7 @@ namespace Ndx\SimpleRedirect\Blueprints;
 use Ndx\SimpleRedirect\Rules\ValidRedirectDestination;
 use Ndx\SimpleRedirect\Rules\ValidRedirectSource;
 use Statamic\Facades\Blueprint;
+use Statamic\Facades\Site;
 use Statamic\Fields\Blueprint as BlueprintInstance;
 
 class RedirectBlueprint
@@ -66,22 +67,46 @@ class RedirectBlueprint
                 ],
                 'sidebar' => [
                     'display'  => __('Sidebar'),
-                    'sections' => [
+                    'sections' => array_filter([
                         [
                             'fields' => [
                                 [
                                     'handle' => 'enabled',
                                     'field'  => [
-                                        'type'    => 'toggle',
-                                        'display' => __('Enabled'),
-                                        'default' => true,
+                                        'type'         => 'toggle',
+                                        'display'      => __('Enabled'),
+                                        'instructions' => __('simple-redirects::messages.instructions.enabled'),
+                                        'default'      => true,
                                     ],
                                 ],
                             ],
                         ],
-                    ],
+                        $this->sitesSection(),
+                    ]),
                 ],
             ],
         ])->setHandle('redirect');
+    }
+
+    protected function sitesSection(): ?array
+    {
+        if (! Site::multiEnabled()) {
+            return null;
+        }
+
+        return [
+            'fields' => [
+                [
+                    'handle' => 'sites',
+                    'field'  => [
+                        'type'         => 'sites',
+                        'display'      => __('Sites'),
+                        'instructions' => __('simple-redirects::messages.instructions.sites'),
+                        'mode'         => 'select',
+                        'default'      => Site::all()->keys()->all(),
+                    ],
+                ],
+            ],
+        ];
     }
 }

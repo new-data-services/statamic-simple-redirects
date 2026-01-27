@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use Ndx\SimpleRedirect\Facades\Redirect;
 use Ndx\SimpleRedirect\Http\Middleware\HandleRedirects;
 use Ndx\SimpleRedirect\Tests\Concerns\WithFileDriver;
+use Statamic\Facades\Site;
 
 uses(WithFileDriver::class);
 
@@ -199,5 +200,81 @@ describe('enabled/disabled', function () {
         Redirect::save($enabledRedirect);
 
         $this->get('/test-multi')->assertRedirect('/correct-page');
+    });
+});
+
+describe('multi-site filtering', function () {
+    beforeEach(function () {
+        config()->set('statamic.system.multisite', true);
+    });
+
+    it('applies redirect when site restriction matches current site', function () {
+        Site::setCurrent('en');
+
+        $redirect = Redirect::make()
+            ->source('/test-site-match')
+            ->destination('/new-page')
+            ->sites(['en'])
+            ->enabled(true);
+
+        Redirect::save($redirect);
+
+        expect($redirect->appliesToSite('en'))->toBeTrue();
+        expect($redirect->appliesToSite('de'))->toBeFalse();
+    });
+
+    it('skips redirect when site restriction does not match', function () {
+        Site::setCurrent('de');
+
+        $redirect = Redirect::make()
+            ->source('/test-site-skip')
+            ->destination('/new-page')
+            ->sites(['en'])
+            ->enabled(true);
+
+        Redirect::save($redirect);
+
+        expect($redirect->appliesToSite('de'))->toBeFalse();
+    });
+
+    it('applies unrestricted redirect regardless of current site', function () {
+        $redirect = Redirect::make()
+            ->source('/test-unrestricted')
+            ->destination('/new-page')
+            ->sites(null)
+            ->enabled(true);
+
+        Redirect::save($redirect);
+
+        expect($redirect->appliesToSite('en'))->toBeTrue();
+        expect($redirect->appliesToSite('de'))->toBeTrue();
+        expect($redirect->appliesToSite('fr'))->toBeTrue();
+    });
+
+    it('applies redirect with empty sites to all sites', function () {
+        $redirect = Redirect::make()
+            ->source('/test-empty-sites')
+            ->destination('/new-page')
+            ->sites([])
+            ->enabled(true);
+
+        Redirect::save($redirect);
+
+        expect($redirect->appliesToSite('en'))->toBeTrue();
+        expect($redirect->appliesToSite('de'))->toBeTrue();
+    });
+
+    it('applies redirect when current site is in the allowed list', function () {
+        $redirect = Redirect::make()
+            ->source('/test-multi-allowed')
+            ->destination('/new-page')
+            ->sites(['en', 'de'])
+            ->enabled(true);
+
+        Redirect::save($redirect);
+
+        expect($redirect->appliesToSite('en'))->toBeTrue();
+        expect($redirect->appliesToSite('de'))->toBeTrue();
+        expect($redirect->appliesToSite('fr'))->toBeFalse();
     });
 });

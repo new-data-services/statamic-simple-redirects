@@ -31,6 +31,7 @@ class RedirectsStore extends BasicStore
             ->source($data['source'] ?? null)
             ->destination($data['destination'] ?? null)
             ->statusCode($data['status_code'] ?? 301)
-            ->enabled($data['enabled'] ?? true);
+            ->enabled($data['enabled'] ?? true)
+            ->sites($data['sites'] ?? null);
     }
 }

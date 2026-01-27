@@ -1,7 +1,7 @@
 <script setup>
 import { ref, getCurrentInstance } from 'vue'
 import { Head, router } from '@statamic/cms/inertia'
-import { Header, Button, Listing, StatusIndicator, Badge, DropdownItem } from '@statamic/cms/ui'
+import { Header, Button, Listing, Badge, DropdownItem, StatusIndicator } from '@statamic/cms/ui'
 
 const props = defineProps({
     title: String,
@@ -12,6 +12,7 @@ const props = defineProps({
     actionUrl: String,
 })
 
+const preferencesPrefix = 'simple-redirects'
 const instance = getCurrentInstance()
 const reordering = ref(false)
 const reorderedItems = ref(null)
@@ -78,8 +79,9 @@ function cancelReorder() {
             :items="redirects"
             :columns="columns"
             :action-url="actionUrl"
+            :preferences-prefix="preferencesPrefix"
             :allow-search="true"
-            :allow-customizing-columns="false"
+            :allow-customizing-columns="true"
             :allow-presets="false"
             :reorderable="reordering"
             :sortable="false"
@@ -98,16 +100,16 @@ function cancelReorder() {
                 <a :href="row.edit_url" class="slug-index-field">{{ value }}</a>
             </template>
 
-            <template #cell-type="{ value }">
-                <Badge>{{ value }}</Badge>
+            <template #cell-sites="{ value }">
+                {{ value }}
             </template>
 
             <template #cell-regex="{ value }">
-                <Badge v-if="value">Regex</Badge>
+                <Badge size="sm" v-if="value">Regex</Badge>
             </template>
 
             <template #cell-status_code="{ value }">
-                <Badge>{{ value }}</Badge>
+                <Badge size="sm">{{ value }}</Badge>
             </template>
 
             <template #prepended-row-actions="{ row }">
