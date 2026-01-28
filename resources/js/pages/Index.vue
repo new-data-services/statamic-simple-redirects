@@ -1,7 +1,7 @@
 <script setup>
 import { ref, getCurrentInstance } from 'vue'
 import { Head, router } from '@statamic/cms/inertia'
-import { Header, Button, Listing, Badge, DropdownItem, StatusIndicator } from '@statamic/cms/ui'
+import { Header, Button, Listing, Badge, DropdownItem, StatusIndicator, Icon, EmptyStateMenu, EmptyStateItem } from '@statamic/cms/ui'
 
 const props = defineProps({
     title: String,
@@ -53,79 +53,97 @@ function cancelReorder() {
     <Head :title="title" />
 
     <div class="max-w-6xl mx-auto">
-        <Header :title="title" icon="moved">
-            <Button
-                v-if="! reordering && redirects.length > 1"
-                @click="reordering = true"
-                :text="__('Reorder')"
-            />
+        <template v-if="redirects.length">
+            <Header :title="title" icon="moved">
+                <Button
+                    v-if="! reordering && redirects.length > 1"
+                    @click="reordering = true"
+                    :text="__('Reorder')"
+                />
 
-            <template v-if="reordering">
-                <Button @click="cancelReorder" :text="__('Cancel')" />
-                <Button @click="saveOrder" :text="__('Save Order')" variant="primary" />
-            </template>
+                <template v-if="reordering">
+                    <Button @click="cancelReorder" :text="__('Cancel')" />
+                    <Button @click="saveOrder" :text="__('Save Order')" variant="primary" />
+                </template>
 
-            <Button
-                v-if="! reordering"
-                :text="__('Create Redirect')"
-                :href="createUrl"
-                variant="primary"
-            />
-        </Header>
+                <Button
+                    v-if="! reordering"
+                    :text="__('Create Redirect')"
+                    :href="createUrl"
+                    variant="primary"
+                />
+            </Header>
 
-        <Listing
-            v-if="redirects.length > 0"
-            :key="listingKey"
-            :items="redirects"
-            :columns="columns"
-            :action-url="actionUrl"
-            :preferences-prefix="preferencesPrefix"
-            :allow-search="true"
-            :allow-customizing-columns="true"
-            :allow-presets="false"
-            :reorderable="reordering"
-            :sortable="false"
-            @reordered="handleReordered"
-            @refreshing="router.reload()"
-        >
-            <template #cell-source="{ row, value }">
-                <div class="flex items-center gap-2">
-                    <StatusIndicator :status="row.enabled ? 'published' : 'draft'" />
+            <Listing
+                :key="listingKey"
+                :items="redirects"
+                :columns="columns"
+                :action-url="actionUrl"
+                :preferences-prefix="preferencesPrefix"
+                :allow-search="true"
+                :allow-customizing-columns="true"
+                :allow-presets="false"
+                :reorderable="reordering"
+                :sortable="false"
+                @reordered="handleReordered"
+                @refreshing="router.reload()"
+            >
+                <template #cell-source="{ row, value }">
+                    <div class="flex items-center gap-2">
+                        <StatusIndicator :status="row.enabled ? 'published' : 'draft'" />
 
+                        <a :href="row.edit_url" class="slug-index-field">{{ value }}</a>
+                    </div>
+                </template>
+
+                <template #cell-destination="{ row, value }">
                     <a :href="row.edit_url" class="slug-index-field">{{ value }}</a>
-                </div>
-            </template>
+                </template>
 
-            <template #cell-destination="{ row, value }">
-                <a :href="row.edit_url" class="slug-index-field">{{ value }}</a>
-            </template>
+                <template #cell-sites="{ value }">
+                    {{ value }}
+                </template>
 
-            <template #cell-sites="{ value }">
-                {{ value }}
-            </template>
+                <template #cell-regex="{ value }">
+                    <Badge size="sm" v-if="value">Regex</Badge>
+                </template>
 
-            <template #cell-regex="{ value }">
-                <Badge size="sm" v-if="value">Regex</Badge>
-            </template>
+                <template #cell-status_code="{ value }">
+                    <Badge size="sm">{{ value }}</Badge>
+                </template>
 
-            <template #cell-status_code="{ value }">
-                <Badge size="sm">{{ value }}</Badge>
-            </template>
+                <template #prepended-row-actions="{ row }">
+                    <DropdownItem :text="__('Edit')" icon="pencil" :href="row.edit_url" />
+                </template>
+            </Listing>
+        </template>
 
-            <template #prepended-row-actions="{ row }">
-                <DropdownItem :text="__('Edit')" icon="pencil" :href="row.edit_url" />
-            </template>
-        </Listing>
+        <template v-if="! redirects.length">
+            <header class="py-8 mt-8 text-center">
+                <h1 class="text-[25px] font-medium antialiased flex justify-center items-center gap-2 sm:gap-3">
+                    <Icon name="moved" class="size-5 text-gray-500" />
+                    {{ title }}
+                </h1>
+            </header>
 
-        <div v-if="! redirects.length" class="p-8 text-center text-gray-500">
-            <p>{{ __('No redirects found.') }}</p>
+            <EmptyStateMenu :heading="__('simple-redirects::messages.redirects_intro')">
+                <EmptyStateItem
+                    :href="createUrl"
+                    icon="moved"
+                    :heading="__('Create Redirect')"
+                    :description="__('simple-redirects::messages.create_first_redirect')"
+                />
+            </EmptyStateMenu>
 
-            <Button
-                :text="__('Create your first redirect')"
-                :href="createUrl"
-                variant="primary"
-                class="mt-4"
-            />
-        </div>
+            <div class="mt-12 mb-10 flex justify-center text-center">
+                <Badge
+                    :text="__('simple-redirects::messages.learn_about_redirects')"
+                    icon-append="external-link"
+                    href="https://github.com/new-data-services/statamic-simple-redirects"
+                    target="_blank"
+                    pill
+                />
+            </div>
+        </template>
     </div>
 </template>
