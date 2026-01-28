@@ -24,6 +24,10 @@ class DisableRedirect extends Action
 
     public function visibleToBulk($items)
     {
+        if ($items->whereInstanceOf(Redirect::class)->count() !== $items->count()) {
+            return false;
+        }
+
         return $items->filter(fn ($item) => $item->isEnabled())->isNotEmpty();
     }
 
