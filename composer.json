@@ -11,7 +11,8 @@
         }
     ],
     "require": {
-        "statamic/cms": "^6.0"
+        "statamic/cms": "^6.0",
+        "league/csv": "^9.27"
     },
     "require-dev": {
         "orchestra/testbench": "^10.8",
