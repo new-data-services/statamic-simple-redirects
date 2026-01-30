@@ -54,7 +54,7 @@ describe('external format integration', function () {
     it('imports format with type and match_type columns', function () {
         $csv = makeCsv([
             ['enabled', 'source', 'source_md5', 'destination', 'type', 'site', 'match_type', 'description', 'order'],
-            ['1', '/foo', 'abc123', '/bar', '410', 'default', 'exact', '', '1'],
+            ['1', '/foo', 'abc123', '/bar', '302', 'default', 'exact', '', '1'],
             ['0', '/regex-test', 'def456', '/result', '301', 'default', 'regex', 'Description', '0'],
         ]);
 
@@ -67,7 +67,7 @@ describe('external format integration', function () {
         $first     = $redirects->first(fn ($r) => $r->source() === '/foo');
         $second    = $redirects->first(fn ($r) => $r->source() === '/regex-test');
 
-        expect($first->statusCode())->toBe(410);
+        expect($first->statusCode())->toBe(302);
         expect($first->isEnabled())->toBeTrue();
         expect($first->isRegex())->toBeFalse();
 

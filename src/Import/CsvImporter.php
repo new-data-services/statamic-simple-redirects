@@ -94,7 +94,7 @@ class CsvImporter
             $row[$field] = match ($field) {
                 'enabled'     => in_array(strtolower($value), ['1', 'true', 'yes']),
                 'regex'       => in_array(strtolower($value), ['1', 'true', 'yes']),
-                'status_code' => (int) $value ?: 301,
+                'status_code' => in_array((int) $value, [301, 302]) ? (int) $value : 301,
                 'sites'       => $this->filterValidSites($value, $availableSites),
                 'order'       => $value !== '' ? (int) $value : null,
                 'match_type'  => $row['regex'] = strtolower($value) === 'regex',

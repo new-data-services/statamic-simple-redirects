@@ -94,6 +94,30 @@ describe('import', function () {
         expect(Redirect::all())->toHaveCount(1);
         expect(Redirect::all()->first()->source())->toBe('/valid');
     });
+
+    it('converts invalid status codes to 301', function () {
+        $csv = createCsv([
+            ['source', 'destination', 'status_code'],
+            ['/page-410', '/target-410', '410'],
+            ['/page-500', '/target-500', '500'],
+            ['/page-invalid', '/target-invalid', 'abc'],
+            ['/page-301', '/target-301', '301'],
+            ['/page-302', '/target-302', '302'],
+        ]);
+
+        $importer = new CsvImporter(new ColumnMapper);
+        $importer->import($csv);
+
+        $redirects = Redirect::all();
+
+        expect($redirects)->toHaveCount(5);
+
+        expect($redirects->first(fn ($r) => $r->source() === '/page-410')->statusCode())->toBe(301);
+        expect($redirects->first(fn ($r) => $r->source() === '/page-500')->statusCode())->toBe(301);
+        expect($redirects->first(fn ($r) => $r->source() === '/page-invalid')->statusCode())->toBe(301);
+        expect($redirects->first(fn ($r) => $r->source() === '/page-301')->statusCode())->toBe(301);
+        expect($redirects->first(fn ($r) => $r->source() === '/page-302')->statusCode())->toBe(302);
+    });
 });
 
 describe('getMapping', function () {
@@ -119,7 +143,7 @@ describe('external format support', function () {
     it('imports format with type and match_type columns', function () {
         $csv = createCsv([
             ['enabled', 'source', 'source_md5', 'destination', 'type', 'site', 'match_type', 'description', 'order'],
-            ['1', '/foo', 'abc123', '/bar', '410', 'default', 'exact', '', '1'],
+            ['1', '/foo', 'abc123', '/bar', '302', 'default', 'exact', '', '1'],
             ['0', '/test', 'def456', '/result', '301', 'default', 'regex', 'A description', '0'],
         ]);
 
@@ -132,7 +156,7 @@ describe('external format support', function () {
         $first     = $redirects->first(fn ($r) => $r->source() === '/foo');
         $second    = $redirects->first(fn ($r) => $r->source() === '/test');
 
-        expect($first->statusCode())->toBe(410);
+        expect($first->statusCode())->toBe(302);
         expect($first->isEnabled())->toBeTrue();
         expect($first->isRegex())->toBeFalse();
 

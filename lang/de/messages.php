@@ -18,6 +18,7 @@ return [
         'source'      => 'Der URL-Pfad, von dem weitergeleitet werden soll. Verwende * als Wildcard (z.B. /blog/*).',
         'destination' => 'Die Ziel-URL. Verwende $1, $2 usw. für erfasste Wildcards.',
         'regex'       => 'Unterstützung reguläre Ausdrücke aktivieren (fortgeschritten).',
+        'status_code' => 'Wähle 301 für permanente oder 302 für temporäre Weiterleitungen.',
         'enabled'     => 'Ob diese Weiterleitung aktiv ist.',
         'sites'       => 'Weiterleitung auf bestimmte Seiten beschränken.',
     ],

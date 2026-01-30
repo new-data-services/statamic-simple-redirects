@@ -51,11 +51,10 @@ class RedirectBlueprint
                                     'field'  => [
                                         'type'         => 'select',
                                         'display'      => __('Status Code'),
-                                        'instructions' => __('HTTP status code for the redirect'),
+                                        'instructions' => __('simple-redirects::messages.instructions.status_code'),
                                         'options'      => [
                                             '301' => '301 - ' . __('Permanent'),
                                             '302' => '302 - ' . __('Temporary'),
-                                            '410' => '410 - ' . __('Gone'),
                                         ],
                                         'default'  => '301',
                                         'validate' => ['required'],
