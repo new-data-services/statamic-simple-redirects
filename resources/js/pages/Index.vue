@@ -1,7 +1,7 @@
 <script setup>
 import { ref, getCurrentInstance } from 'vue'
 import { Head, router } from '@statamic/cms/inertia'
-import { Header, Button, Listing, Badge, DropdownItem, StatusIndicator, Icon, EmptyStateMenu, EmptyStateItem } from '@statamic/cms/ui'
+import { Header, Button, Listing, Badge, Dropdown, DropdownMenu, DropdownItem, StatusIndicator, Icon, EmptyStateMenu, EmptyStateItem } from '@statamic/cms/ui'
 
 const props = defineProps({
     title: String,
@@ -10,6 +10,8 @@ const props = defineProps({
     createUrl: String,
     reorderUrl: String,
     actionUrl: String,
+    exportUrl: String,
+    importUrl: String,
 })
 
 const preferencesPrefix = 'simple-redirects'
@@ -17,6 +19,7 @@ const instance = getCurrentInstance()
 const reordering = ref(false)
 const reorderedItems = ref(null)
 const listingKey = ref(0)
+const fileInput = ref(null)
 
 function handleReordered(items) {
     reorderedItems.value = items
@@ -47,6 +50,35 @@ function cancelReorder() {
     reordering.value = false
     listingKey.value++
 }
+
+function triggerImport() {
+    fileInput.value?.click()
+}
+
+function handleImportFile(event) {
+    if (! event.target.files[0]) {
+        return
+    }
+
+    Statamic.$progress.start('import')
+
+    const formData = new FormData()
+    formData.append('file', event.target.files[0])
+
+    instance.proxy.$axios.post(props.importUrl, formData)
+        .then(() => {
+            Statamic.$toast.success(__('simple-redirects::messages.import_complete'))
+            router.reload()
+        })
+        .catch(() => {
+            Statamic.$toast.error(__('simple-redirects::messages.import_failed'))
+        })
+        .finally(() => {
+            Statamic.$progress.complete('import')
+            event.target.value = ''
+        })
+}
+
 </script>
 
 <template>
@@ -55,6 +87,27 @@ function cancelReorder() {
     <div class="max-w-6xl mx-auto">
         <template v-if="redirects.length">
             <Header :title="title" icon="moved">
+                <Dropdown v-if="! reordering">
+                    <template #trigger>
+                        <Button icon="dots" variant="ghost" :aria-label="__('Open dropdown menu')" />
+                    </template>
+
+                    <DropdownMenu>
+                        <DropdownItem
+                            :text="__('simple-redirects::messages.import_csv')"
+                            icon="upload-arrow-up"
+                            @click="triggerImport"
+                        />
+                        <DropdownItem
+                            :text="__('simple-redirects::messages.export_csv')"
+                            icon="download-arrow-down"
+                            :href="exportUrl"
+                            target="_blank"
+                            download
+                        />
+                    </DropdownMenu>
+                </Dropdown>
+
                 <Button
                     v-if="! reordering && redirects.length > 1"
                     @click="reordering = true"
@@ -133,6 +186,12 @@ function cancelReorder() {
                     :heading="__('Create Redirect')"
                     :description="__('simple-redirects::messages.create_first_redirect')"
                 />
+                <EmptyStateItem
+                    @click="triggerImport"
+                    icon="upload-arrow-up"
+                    :heading="__('simple-redirects::messages.import_csv')"
+                    :description="__('simple-redirects::messages.import_description')"
+                />
             </EmptyStateMenu>
 
             <div class="mt-12 mb-10 flex justify-center text-center">
@@ -145,5 +204,13 @@ function cancelReorder() {
                 />
             </div>
         </template>
+
+        <input
+            ref="fileInput"
+            type="file"
+            accept=".csv,text/csv"
+            class="hidden"
+            @change="handleImportFile"
+        >
     </div>
 </template>

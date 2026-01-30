@@ -27,4 +27,11 @@ return [
         'invalid_regex'           => 'Das reguläre Ausdruck ist ungültig.',
         'dangerous_regex_pattern' => 'Das reguläre Ausdruck ist potenziell gefährlich.',
     ],
+
+    'export_csv'               => 'CSV exportieren',
+    'import_csv'               => 'CSV importieren',
+    'import_description'       => 'Importiere Weiterleitungen aus einer CSV-Datei',
+    'required_columns_missing' => 'Erforderliche Spalten (source, destination) fehlen',
+    'import_complete'          => 'Import abgeschlossen',
+    'import_failed'            => 'Import fehlgeschlagen',
 ];

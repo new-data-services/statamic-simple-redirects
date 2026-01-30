@@ -45,6 +45,8 @@ class RedirectController extends CpController
             'createUrl'  => cp_route('simple-redirects.create'),
             'reorderUrl' => cp_route('simple-redirects.reorder'),
             'actionUrl'  => cp_route('simple-redirects.actions.run'),
+            'exportUrl'  => cp_route('simple-redirects.export'),
+            'importUrl'  => cp_route('simple-redirects.import'),
         ]);
     }
 

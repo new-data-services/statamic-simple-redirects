@@ -27,4 +27,11 @@ return [
         'invalid_regex'           => 'The regular expression is invalid.',
         'dangerous_regex_pattern' => 'The regular expression is potentially dangerous.',
     ],
+
+    'export_csv'               => 'Export CSV',
+    'import_csv'               => 'Import CSV',
+    'import_description'       => 'Import redirects from a CSV file',
+    'required_columns_missing' => 'Required columns (source, destination) are missing',
+    'import_complete'          => 'Import complete',
+    'import_failed'            => 'Import failed',
 ];
