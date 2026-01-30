@@ -90,9 +90,9 @@ function handleImportFile(event) {
 </script>
 
 <template>
-    <Head :title="title" />
+    <div>
+        <Head :title="title" />
 
-    <div class="max-w-6xl mx-auto">
         <template v-if="redirects.length">
             <Header :title="title" icon="moved">
                 <Dropdown v-if="! reordering">
@@ -153,12 +153,12 @@ function handleImportFile(event) {
                     <div class="flex items-center gap-2">
                         <StatusIndicator :status="row.enabled ? 'published' : 'draft'" />
 
-                        <a :href="row.edit_url" class="slug-index-field">{{ value }}</a>
+                        <a :href="row.edit_url" class="slug-index-field" style="word-break: break-all;">{{ value }}</a>
                     </div>
                 </template>
 
                 <template #cell-destination="{ row, value }">
-                    <a :href="row.edit_url" class="slug-index-field">{{ value }}</a>
+                    <a :href="row.edit_url" class="slug-index-field" style="word-break: break-all;">{{ value }}</a>
                 </template>
 
                 <template #cell-sites="{ value }">
@@ -201,17 +201,17 @@ function handleImportFile(event) {
                     :description="__('simple-redirects::messages.import_description')"
                 />
             </EmptyStateMenu>
-
-            <div class="mt-12 mb-10 flex justify-center text-center">
-                <Badge
-                    :text="__('simple-redirects::messages.learn_about_redirects')"
-                    icon-append="external-link"
-                    href="https://github.com/new-data-services/statamic-simple-redirects"
-                    target="_blank"
-                    pill
-                />
-            </div>
         </template>
+
+        <div class="mt-12 mb-10 flex justify-center text-center">
+            <Badge
+                :text="__('simple-redirects::messages.learn_about_redirects')"
+                icon-append="external-link"
+                href="https://github.com/new-data-services/statamic-simple-redirects"
+                target="_blank"
+                pill
+            />
+        </div>
 
         <input
             ref="fileInput"

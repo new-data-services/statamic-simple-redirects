@@ -113,7 +113,8 @@ class ServiceProvider extends AddonServiceProvider
     protected function bootPermissions(): self
     {
         Permission::register('manage redirects')
-            ->label(__('simple-redirects::permissions.manage_redirects'));
+            ->label(__('simple-redirects::permissions.manage_redirects'))
+            ->description(__('simple-redirects::permissions.manage_redirects_desc'));
 
         return $this;
     }
