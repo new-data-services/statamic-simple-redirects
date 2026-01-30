@@ -1,5 +1,5 @@
 <script setup>
-import { ref, getCurrentInstance } from 'vue'
+import { ref, getCurrentInstance, onBeforeUnmount } from 'vue'
 import { Head, router } from '@statamic/cms/inertia'
 import { Header, Button, Listing, Badge, Dropdown, DropdownMenu, DropdownItem, StatusIndicator, Icon, EmptyStateMenu, EmptyStateItem } from '@statamic/cms/ui'
 
@@ -20,6 +20,15 @@ const reordering = ref(false)
 const reorderedItems = ref(null)
 const listingKey = ref(0)
 const fileInput = ref(null)
+
+const saveKeyBinding = ref(Statamic.$keys.bindGlobal(['mod+s'], (e) => {
+    if (reordering.value) {
+        e.preventDefault()
+        saveOrder()
+    }
+}))
+
+onBeforeUnmount(() => saveKeyBinding.value?.destroy())
 
 function handleReordered(items) {
     reorderedItems.value = items
@@ -78,7 +87,6 @@ function handleImportFile(event) {
             event.target.value = ''
         })
 }
-
 </script>
 
 <template>
