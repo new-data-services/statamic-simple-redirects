@@ -39,13 +39,13 @@ class ValidRedirectSource implements DataAwareRule, ValidationRule
         restore_error_handler();
 
         if ($result === false) {
-            $fail('simple-redirects::messages.validation.invalid_regex')->translate();
+            $fail('simple-redirects::validation.invalid_regex')->translate();
 
             return;
         }
 
         if (preg_match('/(\+|\*|\?)\s*(\+|\*|\?)/', $pattern)) {
-            $fail('simple-redirects::messages.validation.dangerous_regex_pattern')->translate();
+            $fail('simple-redirects::validation.dangerous_regex_pattern')->translate();
         }
     }
 }

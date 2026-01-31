@@ -31,15 +31,15 @@ class RedirectController extends CpController
         ])->values();
 
         $columns = array_values(array_filter([
-            ['field' => 'source', 'label' => __('Source'), 'visible' => true, 'defaultVisibility' => true, 'defaultOrder' => 1],
-            ['field' => 'destination', 'label' => __('Destination'), 'visible' => true, 'defaultVisibility' => true, 'defaultOrder' => 2],
-            Site::multiEnabled() ? ['field' => 'sites', 'label' => __('Sites'), 'visible' => false, 'defaultVisibility' => false, 'defaultOrder' => 3] : null,
-            ['field' => 'regex', 'label' => __('Regex'), 'visible' => true, 'defaultVisibility' => true, 'defaultOrder' => 4],
+            ['field' => 'source', 'label' => __('simple-redirects::fields.source.title'), 'visible' => true, 'defaultVisibility' => true, 'defaultOrder' => 1],
+            ['field' => 'destination', 'label' => __('simple-redirects::fields.destination.title'), 'visible' => true, 'defaultVisibility' => true, 'defaultOrder' => 2],
+            Site::multiEnabled() ? ['field' => 'sites', 'label' => __('simple-redirects::fields.sites.title'), 'visible' => false, 'defaultVisibility' => false, 'defaultOrder' => 3] : null,
+            ['field' => 'regex', 'label' => __('simple-redirects::fields.regex.title'), 'visible' => true, 'defaultVisibility' => true, 'defaultOrder' => 4],
             ['field' => 'status_code', 'label' => __('Code'), 'visible' => true, 'defaultVisibility' => true, 'defaultOrder' => 5],
         ]));
 
         return Inertia::render('simple-redirects::Index', [
-            'title'      => __('Redirects'),
+            'title'      => __('simple-redirects::messages.redirects'),
             'redirects'  => $redirects,
             'columns'    => $columns,
             'createUrl'  => cp_route('simple-redirects.create'),
@@ -58,7 +58,7 @@ class RedirectController extends CpController
         $fields    = $blueprint->fields()->preProcess();
 
         return Inertia::render('simple-redirects::Publish', [
-            'title'            => __('Create Redirect'),
+            'title'            => __('simple-redirects::messages.create_redirect'),
             'icon'             => 'moved',
             'blueprint'        => $blueprint->toPublishArray(),
             'values'           => $fields->values()->all(),
@@ -105,7 +105,7 @@ class RedirectController extends CpController
         $fields = $blueprint->fields()->addValues($values)->preProcess();
 
         return Inertia::render('simple-redirects::Publish', [
-            'title'            => __('Edit Redirect'),
+            'title'            => __('simple-redirects::messages.edit_redirect'),
             'icon'             => 'moved',
             'blueprint'        => $blueprint->toPublishArray(),
             'values'           => $fields->values()->all(),

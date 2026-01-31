@@ -20,7 +20,7 @@ class ValidRedirectDestination implements ValidationRule
 
         foreach ($this->blockedProtocols as $protocol) {
             if (stripos($value, $protocol) === 0) {
-                $fail('simple-redirects::messages.validation.blocked_protocol')->translate();
+                $fail('simple-redirects::validation.blocked_protocol')->translate();
 
                 return;
             }

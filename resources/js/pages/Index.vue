@@ -129,7 +129,7 @@ function handleImportFile(event) {
 
                 <Button
                     v-if="! reordering"
-                    :text="__('Create Redirect')"
+                    :text="__('simple-redirects::messages.create_redirect')"
                     :href="createUrl"
                     variant="primary"
                 />
@@ -191,7 +191,7 @@ function handleImportFile(event) {
                 <EmptyStateItem
                     :href="createUrl"
                     icon="moved"
-                    :heading="__('Create Redirect')"
+                    :heading="__('simple-redirects::messages.create_redirect')"
                     :description="__('simple-redirects::messages.create_first_redirect')"
                 />
                 <EmptyStateItem

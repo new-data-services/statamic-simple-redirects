@@ -23,8 +23,8 @@ class RedirectBlueprint
                                     'handle' => 'source',
                                     'field'  => [
                                         'type'         => 'text',
-                                        'display'      => __('Source URL'),
-                                        'instructions' => __('simple-redirects::messages.instructions.source'),
+                                        'display'      => __('simple-redirects::fields.source.title'),
+                                        'instructions' => __('simple-redirects::fields.source.instructions'),
                                         'validate'     => ['required', new ValidRedirectSource],
                                     ],
                                 ],
@@ -32,8 +32,8 @@ class RedirectBlueprint
                                     'handle' => 'destination',
                                     'field'  => [
                                         'type'         => 'text',
-                                        'display'      => __('Destination URL'),
-                                        'instructions' => __('simple-redirects::messages.instructions.destination'),
+                                        'display'      => __('simple-redirects::fields.destination.title'),
+                                        'instructions' => __('simple-redirects::fields.destination.instructions'),
                                         'validate'     => ['required', new ValidRedirectDestination],
                                     ],
                                 ],
@@ -41,8 +41,8 @@ class RedirectBlueprint
                                     'handle' => 'regex',
                                     'field'  => [
                                         'type'         => 'toggle',
-                                        'display'      => __('Regex'),
-                                        'instructions' => __('simple-redirects::messages.instructions.regex'),
+                                        'display'      => __('simple-redirects::fields.regex.title'),
+                                        'instructions' => __('simple-redirects::fields.regex.instructions'),
                                         'default'      => false,
                                     ],
                                 ],
@@ -50,8 +50,8 @@ class RedirectBlueprint
                                     'handle' => 'status_code',
                                     'field'  => [
                                         'type'         => 'select',
-                                        'display'      => __('Status Code'),
-                                        'instructions' => __('simple-redirects::messages.instructions.status_code'),
+                                        'display'      => __('simple-redirects::fields.status_code.title'),
+                                        'instructions' => __('simple-redirects::fields.status_code.instructions'),
                                         'options'      => [
                                             '301' => '301 - ' . __('Permanent'),
                                             '302' => '302 - ' . __('Temporary'),
@@ -73,8 +73,8 @@ class RedirectBlueprint
                                     'handle' => 'enabled',
                                     'field'  => [
                                         'type'         => 'toggle',
-                                        'display'      => __('Enabled'),
-                                        'instructions' => __('simple-redirects::messages.instructions.enabled'),
+                                        'display'      => __('simple-redirects::fields.enabled.title'),
+                                        'instructions' => __('simple-redirects::fields.enabled.instructions'),
                                         'default'      => true,
                                     ],
                                 ],
@@ -99,8 +99,8 @@ class RedirectBlueprint
                     'handle' => 'sites',
                     'field'  => [
                         'type'         => 'sites',
-                        'display'      => __('Sites'),
-                        'instructions' => __('simple-redirects::messages.instructions.sites'),
+                        'display'      => __('simple-redirects::fields.sites.title'),
+                        'instructions' => __('simple-redirects::fields.sites.instructions'),
                         'mode'         => 'select',
                         'default'      => Site::all()->keys()->all(),
                     ],
