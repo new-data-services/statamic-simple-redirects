@@ -207,7 +207,7 @@ function handleImportFile(event) {
             <Badge
                 :text="__('simple-redirects::messages.learn_about_redirects')"
                 icon-append="external-link"
-                href="https://github.com/new-data-services/statamic-simple-redirects"
+                href="https://statamic.com/addons/new-data-services/simple-redirects"
                 target="_blank"
                 pill
             />
