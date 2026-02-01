@@ -10,7 +10,7 @@ Simple, lightweight redirect management for Statamic CMS.
 
 ## Overview
 
-This addon lets you create and manage redirects directly from the Statamic Control Panel.  
+This addon lets you create and manage redirects for 404 pages directly from the Statamic Control Panel.
 It is simple by design, focusing on the essentials with a clean and straightforward setup.
 
 If you need more advanced features like analytics or automatic redirect creation, take a look at the excellent [Redirect addon](https://github.com/riasvdv/statamic-redirect) by Rias.
@@ -88,8 +88,8 @@ This addon registers a `manage redirects` permission. For non-admin users, this 
 
 The default match type supports wildcards using `*`:
 
-- `/old-blog/*` → `/blog/*`
-- `/products/*/details` → `/shop/*/info`
+- `/old-blog/*` → `/blog/$1`
+- `/products/*/details` → `/shop/$1/info`
 
 ### Regex Redirects
 
