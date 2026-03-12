@@ -14,6 +14,7 @@ use Ndx\SimpleRedirect\Http\Middleware\HandleRedirects;
 use Ndx\SimpleRedirect\Repositories\EloquentRedirectRepository;
 use Ndx\SimpleRedirect\Repositories\FileRedirectRepository;
 use Ndx\SimpleRedirect\Repositories\FileRedirectTreeRepository;
+use Ndx\SimpleRedirect\ServiceProvider;
 use Statamic\Facades\Git;
 use Statamic\Facades\Permission;
 
@@ -129,8 +130,8 @@ describe('git integration', function () {
         Git::shouldReceive('listen')->with(RedirectDeleted::class)->once();
         Git::shouldReceive('listen')->with(RedirectTreeSaved::class)->once();
 
-        $provider   = new \Ndx\SimpleRedirect\ServiceProvider(app());
-        $reflection = new \ReflectionMethod($provider, 'bootGitListeners');
+        $provider   = new ServiceProvider(app());
+        $reflection = new ReflectionMethod($provider, 'bootGitListeners');
         $reflection->invoke($provider);
     });
 });

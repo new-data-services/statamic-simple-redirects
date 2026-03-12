@@ -2,6 +2,7 @@
 
 use Ndx\SimpleRedirect\Facades\Redirect;
 use Ndx\SimpleRedirect\Import\ColumnMapper;
+use Ndx\SimpleRedirect\Import\CsvExporter;
 use Ndx\SimpleRedirect\Import\CsvImporter;
 use Ndx\SimpleRedirect\Tests\Concerns\WithFileDriver;
 
@@ -119,7 +120,7 @@ describe('round-trip import/export', function () {
                 ->regex(true)
         );
 
-        $exporter = new \Ndx\SimpleRedirect\Import\CsvExporter;
+        $exporter = new CsvExporter;
         $csv      = $exporter->export();
 
         // Clear existing redirects
