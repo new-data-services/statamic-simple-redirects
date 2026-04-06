@@ -7,6 +7,8 @@ use Ndx\SimpleRedirect\Actions\DisableRedirect;
 use Ndx\SimpleRedirect\Actions\EnableRedirect;
 use Ndx\SimpleRedirect\Contracts\RedirectRepository;
 use Ndx\SimpleRedirect\Contracts\RedirectTreeRepository;
+use Ndx\SimpleRedirect\Data\Redirect;
+use Ndx\SimpleRedirect\Data\RedirectTree;
 use Ndx\SimpleRedirect\Events\RedirectDeleted;
 use Ndx\SimpleRedirect\Events\RedirectSaved;
 use Ndx\SimpleRedirect\Events\RedirectTreeSaved;
@@ -52,6 +54,11 @@ class ServiceProvider extends AddonServiceProvider
         $this->mergeConfigFrom(__DIR__ . '/../config/redirects.php', 'statamic.redirects');
 
         $this->registerRepositories();
+
+        $this->registerSerializableClasses([
+            Redirect::class,
+            RedirectTree::class,
+        ]);
     }
 
     public function bootAddon(): void

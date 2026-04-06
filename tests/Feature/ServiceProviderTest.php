@@ -7,6 +7,8 @@ use Ndx\SimpleRedirect\Actions\DisableRedirect;
 use Ndx\SimpleRedirect\Actions\EnableRedirect;
 use Ndx\SimpleRedirect\Contracts\RedirectRepository;
 use Ndx\SimpleRedirect\Contracts\RedirectTreeRepository;
+use Ndx\SimpleRedirect\Data\Redirect;
+use Ndx\SimpleRedirect\Data\RedirectTree;
 use Ndx\SimpleRedirect\Events\RedirectDeleted;
 use Ndx\SimpleRedirect\Events\RedirectSaved;
 use Ndx\SimpleRedirect\Events\RedirectTreeSaved;
@@ -87,6 +89,14 @@ describe('actions', function () {
 });
 
 describe('stache stores', function () {
+    it('registers data classes as serializable for stache cache', function () {
+        $classes = config('cache.serializable_classes');
+
+        expect($classes)
+            ->toContain(Redirect::class)
+            ->toContain(RedirectTree::class);
+    });
+
     it('registers redirects stache store for file driver', function () {
         config()->set('statamic.redirects.driver', 'file');
 
