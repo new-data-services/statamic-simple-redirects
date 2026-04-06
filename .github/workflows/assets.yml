@@ -28,7 +28,7 @@ jobs:
       - run: composer install --no-interaction --prefer-dist --optimize-autoloader
       - run: npm install
       - run: npm run prod
-      - uses: stefanzweifel/git-auto-commit-action@v6
+      - uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "[skip ci] Build assets"
           file_pattern: 'dist/*'
