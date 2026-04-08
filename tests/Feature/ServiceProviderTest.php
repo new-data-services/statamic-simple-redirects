@@ -90,9 +90,11 @@ describe('actions', function () {
 
 describe('stache stores', function () {
     it('registers data classes as serializable for stache cache', function () {
-        $classes = config('cache.serializable_classes');
+        config()->set('cache.serializable_classes', []);
 
-        expect($classes)
+        (new ServiceProvider(app()))->register();
+
+        expect(config('cache.serializable_classes'))
             ->toContain(Redirect::class)
             ->toContain(RedirectTree::class);
     });
