@@ -73,7 +73,7 @@ class RedirectTree implements RedirectTreeContract
     {
         $this->repository()->save($this);
 
-        event(new RedirectTreeSaved($this));
+        RedirectTreeSaved::dispatch($this);
 
         return true;
     }

@@ -2,14 +2,12 @@
 
 namespace Ndx\SimpleRedirect\Events;
 
-use Illuminate\Foundation\Events\Dispatchable;
 use Ndx\SimpleRedirect\Data\RedirectTree;
 use Statamic\Contracts\Git\ProvidesCommitMessage;
+use Statamic\Events\Event;
 
-class RedirectTreeSaved implements ProvidesCommitMessage
+class RedirectTreeSaved extends Event implements ProvidesCommitMessage
 {
-    use Dispatchable;
-
     public function __construct(
         public RedirectTree $tree
     ) {}

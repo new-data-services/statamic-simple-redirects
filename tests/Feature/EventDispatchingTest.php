@@ -7,6 +7,7 @@ use Ndx\SimpleRedirect\Events\RedirectSaved;
 use Ndx\SimpleRedirect\Events\RedirectTreeSaved;
 use Ndx\SimpleRedirect\Facades\Redirect;
 use Ndx\SimpleRedirect\Tests\Concerns\WithFileDriver;
+use Statamic\Facades\User;
 
 uses(WithFileDriver::class);
 
@@ -48,6 +49,20 @@ describe('RedirectSaved event', function () {
 
         Event::assertDispatched(RedirectSaved::class);
     });
+
+    it('populates authenticatedUser', function () {
+        $user = User::make()->email('test@example.com')->save();
+        $this->actingAs($user);
+
+        Event::fake([RedirectSaved::class]);
+
+        $redirect = Redirect::make()->source('/old')->destination('/new');
+        Redirect::save($redirect);
+
+        Event::assertDispatched(RedirectSaved::class, function ($event) use ($user) {
+            return $event->authenticatedUser?->email() === $user->email();
+        });
+    });
 });
 
 describe('RedirectDeleted event', function () {
@@ -76,6 +91,22 @@ describe('RedirectDeleted event', function () {
 
         Event::assertDispatched(RedirectDeleted::class, function ($event) use ($redirect) {
             return $event->redirect->id() === $redirect->id();
+        });
+    });
+
+    it('populates authenticatedUser', function () {
+        $user = User::make()->email('test@example.com')->save();
+        $this->actingAs($user);
+
+        $redirect = Redirect::make()->source('/old')->destination('/new');
+        Redirect::save($redirect);
+
+        Event::fake([RedirectDeleted::class]);
+
+        Redirect::delete($redirect);
+
+        Event::assertDispatched(RedirectDeleted::class, function ($event) use ($user) {
+            return $event->authenticatedUser?->email() === $user->email();
         });
     });
 });
@@ -116,5 +147,21 @@ describe('RedirectTreeSaved event', function () {
         Redirect::reorder([$redirect2->id(), $redirect1->id()]);
 
         Event::assertDispatched(RedirectTreeSaved::class);
+    });
+
+    it('populates authenticatedUser', function () {
+        $user = User::make()->email('test@example.com')->save();
+        $this->actingAs($user);
+
+        Event::fake([RedirectTreeSaved::class]);
+
+        $tree = new RedirectTree;
+        $tree->handle('test-tree');
+        $tree->tree(['id-1']);
+        $tree->save();
+
+        Event::assertDispatched(RedirectTreeSaved::class, function ($event) use ($user) {
+            return $event->authenticatedUser?->email() === $user->email();
+        });
     });
 });

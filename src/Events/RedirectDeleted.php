@@ -2,14 +2,12 @@
 
 namespace Ndx\SimpleRedirect\Events;
 
-use Illuminate\Foundation\Events\Dispatchable;
 use Ndx\SimpleRedirect\Contracts\Redirect;
 use Statamic\Contracts\Git\ProvidesCommitMessage;
+use Statamic\Events\Event;
 
-class RedirectDeleted implements ProvidesCommitMessage
+class RedirectDeleted extends Event implements ProvidesCommitMessage
 {
-    use Dispatchable;
-
     public function __construct(
         public Redirect $redirect
     ) {}

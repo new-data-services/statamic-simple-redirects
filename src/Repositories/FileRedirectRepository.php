@@ -55,7 +55,7 @@ class FileRedirectRepository implements RedirectRepositoryContract
 
         Blink::forget('simple-redirects-ordered-enabled');
 
-        event(new RedirectSaved($redirect));
+        RedirectSaved::dispatch($redirect);
 
         return true;
     }
@@ -69,7 +69,7 @@ class FileRedirectRepository implements RedirectRepositoryContract
 
         Blink::forget('simple-redirects-ordered-enabled');
 
-        event(new RedirectDeleted($redirect));
+        RedirectDeleted::dispatch($redirect);
 
         return true;
     }
