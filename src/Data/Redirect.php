@@ -12,6 +12,7 @@ use Statamic\Data\ExistsAsFile;
 use Statamic\Data\HasAugmentedInstance;
 use Statamic\Facades\Site;
 use Statamic\Facades\Stache;
+use Statamic\Facades\URL;
 use Statamic\Support\Str;
 use Statamic\Support\Traits\FluentlyGetsAndSets;
 
@@ -217,7 +218,7 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
             return $pattern;
         }
 
-        if (! str_starts_with($pattern, '/')) {
+        if (! str_starts_with($pattern, '/') && ! URL::isAbsolute($pattern)) {
             $pattern = '/' . $pattern;
         }
 
@@ -226,10 +227,8 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
 
     public static function normalizeSource(string $source, bool $regex): string
     {
-        if (! $regex) {
-            if (! str_starts_with($source, '/')) {
-                $source = '/' . $source;
-            }
+        if (! $regex && ! str_starts_with($source, '/') && ! URL::isAbsolute($source)) {
+            $source = '/' . $source;
         }
 
         return $source;

@@ -278,3 +278,140 @@ describe('multi-site filtering', function () {
         expect($redirect->appliesToSite('fr'))->toBeFalse();
     });
 });
+
+describe('site prefixes', function () {
+    beforeEach(function () {
+        config()->set('statamic.editions.pro', true);
+        config()->set('statamic.system.multisite', true);
+
+        Site::setSites([
+            'default' => ['name' => 'Default', 'url' => 'http://localhost/', 'locale' => 'de'],
+            'en'      => ['name' => 'English', 'url' => 'http://localhost/en/', 'locale' => 'en'],
+        ]);
+
+        Route::middleware(['web', HandleRedirects::class])
+            ->any('{any}', fn () => abort(404))
+            ->where('any', '.*');
+    });
+
+    it('matches a site relative source on a prefixed site', function () {
+        $redirect = Redirect::make()
+            ->regex(true)
+            ->source('/brands/happy-size(.*)')
+            ->destination('/brands/happysize$1')
+            ->sites(['en'])
+            ->enabled(true);
+
+        Redirect::save($redirect);
+
+        $this->get('http://localhost/en/brands/happy-size-xyz')
+            ->assertRedirect('/en/brands/happysize-xyz');
+    });
+
+    it('matches sources written with the site prefix or the full address', function (string $source) {
+        $redirect = Redirect::make()
+            ->source($source)
+            ->destination('/target')
+            ->sites(['en'])
+            ->enabled(true);
+
+        Redirect::save($redirect);
+
+        $this->get('http://localhost/en/legacy')->assertRedirect('/en/target');
+    })->with([
+        'site relative' => ['/legacy'],
+        'prefixed'      => ['/en/legacy'],
+        'absolute'      => ['http://localhost/en/legacy'],
+    ]);
+
+    it('prefixes only destinations that need it', function (string $destination, string $expected) {
+        $redirect = Redirect::make()
+            ->source('/legacy')
+            ->destination($destination)
+            ->sites(['en'])
+            ->enabled(true);
+
+        Redirect::save($redirect);
+
+        $this->get('http://localhost/en/legacy')->assertRedirect($expected);
+    })->with([
+        'relative' => [
+            '/target',
+            '/en/target',
+        ],
+        'already prefixed' => [
+            '/en/target',
+            '/en/target',
+        ],
+        'absolute' => [
+            'https://example.com/target',
+            'https://example.com/target',
+        ],
+    ]);
+
+    it('treats the site prefix as a full path segment', function () {
+        $redirect = Redirect::make()
+            ->source('/enterprise/old')
+            ->destination('/enterprise/new')
+            ->enabled(true);
+
+        Redirect::save($redirect);
+
+        $this->get('http://localhost/enterprise/old')->assertRedirect('/enterprise/new');
+    });
+});
+
+describe('query strings', function () {
+    beforeEach(function () {
+        Route::middleware(['web', HandleRedirects::class])
+            ->any('{any}', fn () => abort(404))
+            ->where('any', '.*');
+    });
+
+    it('ignores the query string when matching and carries it over', function () {
+        $redirect = Redirect::make()
+            ->source('/tracked-old')
+            ->destination('/tracked-new')
+            ->enabled(true);
+
+        Redirect::save($redirect);
+
+        $this->get('/tracked-old?utm_source=newsletter&utm_medium=email')
+            ->assertRedirect('/tracked-new?utm_source=newsletter&utm_medium=email');
+    });
+
+    it('keeps the query string out of wildcard captures', function () {
+        $redirect = Redirect::make()
+            ->source('/tracked-wildcard/*')
+            ->destination('/articles/$1')
+            ->enabled(true);
+
+        Redirect::save($redirect);
+
+        $this->get('/tracked-wildcard/hello?utm_source=newsletter')
+            ->assertRedirect('/articles/hello?utm_source=newsletter');
+    });
+
+    it('matches a source containing a query string', function () {
+        $redirect = Redirect::make()
+            ->source('index.php?site=home')
+            ->destination('/')
+            ->enabled(true);
+
+        Redirect::save($redirect);
+
+        $this->get('/index.php?site=home')->assertRedirect('/');
+    });
+
+    it('does not append the query string to a destination that has its own', function () {
+        $redirect = Redirect::make()
+            ->source('/own-query-old')
+            ->destination('/own-query-new?ref=redirect')
+            ->enabled(true);
+
+        Redirect::save($redirect);
+
+        $this->get('/own-query-old?utm_source=newsletter')
+            ->assertRedirect('/own-query-new?ref=redirect');
+    });
+});
