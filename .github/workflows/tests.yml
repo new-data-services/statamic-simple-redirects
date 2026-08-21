@@ -1,4 +1,5 @@
 name: Tests
+run-name: ${{ inputs.statamic_version && format('Statamic {0}', inputs.statamic_version) || '' }}
 
 on:
   push:
