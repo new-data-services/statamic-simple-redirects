@@ -10,6 +10,8 @@ use Ndx\SimpleRedirect\Blueprints\RedirectBlueprint;
 use Ndx\SimpleRedirect\Contracts\Redirect as RedirectContract;
 use Ndx\SimpleRedirect\Contracts\RedirectRepository;
 use Ndx\SimpleRedirect\Facades\Redirect;
+use Statamic\CP\Column;
+use Statamic\CP\Columns;
 use Statamic\Facades\Site;
 use Statamic\Http\Controllers\CP\CpController;
 
@@ -30,18 +32,20 @@ class RedirectController extends CpController
             'edit_url'    => cp_route('simple-redirects.edit', $redirect->id()),
         ])->values();
 
-        $columns = array_values(array_filter([
-            ['field' => 'source', 'label' => __('simple-redirects::fields.source.title'), 'visible' => true, 'defaultVisibility' => true, 'defaultOrder' => 1],
-            ['field' => 'destination', 'label' => __('simple-redirects::fields.destination.title'), 'visible' => true, 'defaultVisibility' => true, 'defaultOrder' => 2],
-            Site::multiEnabled() ? ['field' => 'sites', 'label' => __('simple-redirects::fields.sites.title'), 'visible' => false, 'defaultVisibility' => false, 'defaultOrder' => 3] : null,
-            ['field' => 'regex', 'label' => __('simple-redirects::fields.regex.title'), 'visible' => true, 'defaultVisibility' => true, 'defaultOrder' => 4],
-            ['field' => 'status_code', 'label' => __('Code'), 'visible' => true, 'defaultVisibility' => true, 'defaultOrder' => 5],
-        ]));
+        $columns = new Columns(array_values(array_filter([
+            Column::make('source')->label(__('simple-redirects::fields.source.title'))->defaultOrder(1),
+            Column::make('destination')->label(__('simple-redirects::fields.destination.title'))->defaultOrder(2),
+            Site::multiEnabled() ? Column::make('sites')->label(__('simple-redirects::fields.sites.title'))->visible(false)->defaultVisibility(false)->defaultOrder(3) : null,
+            Column::make('regex')->label(__('simple-redirects::fields.regex.title'))->defaultOrder(4),
+            Column::make('status_code')->label(__('Code'))->defaultOrder(5),
+        ])));
+
+        $columns->setPreferred('simple-redirects.columns');
 
         return Inertia::render('simple-redirects::Index', [
             'title'      => __('simple-redirects::messages.redirects'),
             'redirects'  => $redirects,
-            'columns'    => $columns,
+            'columns'    => $columns->values(),
             'createUrl'  => cp_route('simple-redirects.create'),
             'reorderUrl' => cp_route('simple-redirects.reorder'),
             'actionUrl'  => cp_route('simple-redirects.actions.run'),
