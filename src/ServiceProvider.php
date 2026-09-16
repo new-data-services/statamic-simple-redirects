@@ -2,6 +2,7 @@
 
 namespace Ndx\SimpleRedirect;
 
+use Illuminate\Support\Facades\Route;
 use Ndx\SimpleRedirect\Actions\DeleteRedirect;
 use Ndx\SimpleRedirect\Actions\DisableRedirect;
 use Ndx\SimpleRedirect\Actions\EnableRedirect;
@@ -37,12 +38,6 @@ class ServiceProvider extends AddonServiceProvider
         'publicDirectory' => 'dist',
     ];
 
-    protected $middlewareGroups = [
-        'web' => [
-            HandleRedirects::class,
-        ],
-    ];
-
     protected $actions = [
         EnableRedirect::class,
         DisableRedirect::class,
@@ -72,6 +67,7 @@ class ServiceProvider extends AddonServiceProvider
             ->bootRedirectTranslations()
             ->bootPermissions()
             ->bootStorage()
+            ->bootRedirectMiddleware()
             ->bootNavigation()
             ->bootGitListeners();
     }
@@ -147,6 +143,13 @@ class ServiceProvider extends AddonServiceProvider
 
         app('stache')->registerStore($redirectsStore);
         app('stache')->registerStore($treeStore);
+    }
+
+    protected function bootRedirectMiddleware(): self
+    {
+        Route::pushMiddlewareToGroup('web', HandleRedirects::class);
+
+        return $this;
     }
 
     protected function bootNavigation(): self

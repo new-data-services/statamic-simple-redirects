@@ -11,13 +11,14 @@
         }
     ],
     "require": {
-        "statamic/cms": "^6.10",
-        "league/csv": "^9.27"
+        "league/csv": "^9.27",
+        "statamic/cms": "^6.10"
     },
     "require-dev": {
+        "laravel/pint": "^1.27",
+        "orchestra/pest-plugin-testbench": "^4.1",
         "orchestra/testbench": "^10.8",
-        "pestphp/pest": "^4.3",
-        "laravel/pint": "^1.27"
+        "pestphp/pest": "^4.3"
     },
     "autoload": {
         "psr-4": {
