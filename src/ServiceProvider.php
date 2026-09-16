@@ -147,7 +147,7 @@ class ServiceProvider extends AddonServiceProvider
 
     protected function bootRedirectMiddleware(): self
     {
-        Route::pushMiddlewareToGroup('web', HandleRedirects::class);
+        Route::pushMiddlewareToGroup(config('statamic.routes.middleware', 'web'), HandleRedirects::class);
 
         return $this;
     }
