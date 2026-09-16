@@ -2,7 +2,7 @@
     "name": "ndx/statamic-simple-redirects",
     "description": "Simple redirect management for Statamic CMS",
     "type": "statamic-addon",
-    "license": "proprietary",
+    "license": "MIT",
     "author": "NEW DATA SERVICES",
     "authors": [
         {
