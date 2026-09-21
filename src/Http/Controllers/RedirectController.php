@@ -14,9 +14,12 @@ use Statamic\CP\Column;
 use Statamic\CP\Columns;
 use Statamic\Facades\Site;
 use Statamic\Http\Controllers\CP\CpController;
+use Statamic\Support\Traits\Hookable;
 
 class RedirectController extends CpController
 {
+    use Hookable;
+
     public function index(): Response
     {
         $this->authorize('manage redirects');
@@ -40,11 +43,19 @@ class RedirectController extends CpController
             Column::make('status_code')->label(__('Code'))->defaultOrder(5),
         ])));
 
+        $payload = $this->runHooksWith('listing-redirects', [
+            'redirects' => $redirects,
+            'columns'   => $columns,
+        ]);
+
+        $redirects = $payload->redirects ?? $redirects;
+        $columns   = $payload->columns ?? $columns;
+
         $columns->setPreferred('simple-redirects.columns');
 
         return Inertia::render('simple-redirects::Index', [
             'title'      => __('simple-redirects::messages.redirects'),
-            'redirects'  => $redirects,
+            'redirects'  => $redirects->values(),
             'columns'    => $columns->values(),
             'createUrl'  => cp_route('simple-redirects.create'),
             'reorderUrl' => cp_route('simple-redirects.reorder'),
@@ -54,12 +65,19 @@ class RedirectController extends CpController
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         $this->authorize('manage redirects');
 
+        $values = $request->values ?? [];
+
+        $values = $this->runHooksWith('creating-redirect', [
+            'redirect' => Redirect::make(),
+            'values'   => $values,
+        ])->values ?? $values;
+
         $blueprint = (new RedirectBlueprint)();
-        $fields    = $blueprint->fields()->preProcess();
+        $fields    = $blueprint->fields()->addValues($values)->preProcess();
 
         return Inertia::render('simple-redirects::Publish', [
             'title'            => __('simple-redirects::messages.create_redirect'),

@@ -5,6 +5,7 @@ namespace Ndx\SimpleRedirect\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Ndx\SimpleRedirect\Contracts\Redirect as RedirectContract;
+use Ndx\SimpleRedirect\Events\RedirectMatched;
 use Ndx\SimpleRedirect\Facades\Redirect;
 use Statamic\Facades\Site;
 use Statamic\Facades\URL;
@@ -39,10 +40,11 @@ class HandleRedirects
                     continue;
                 }
 
-                return redirect(
-                    $this->buildDestination($redirect, $candidate, $queryString, $site),
-                    $redirect->statusCode()
-                );
+                $destination = $this->buildDestination($redirect, $candidate, $queryString, $site);
+
+                RedirectMatched::dispatch($redirect, $request, $candidate, $destination);
+
+                return redirect($destination, $redirect->statusCode());
             }
         }
 
