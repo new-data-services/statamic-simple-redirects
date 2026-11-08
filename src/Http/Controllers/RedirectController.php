@@ -54,12 +54,19 @@ class RedirectController extends CpController
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         $this->authorize('manage redirects');
 
         $blueprint = (new RedirectBlueprint)();
-        $fields    = $blueprint->fields()->preProcess();
+        $values    = $blueprint->fields()->values()->all();
+
+        // Statamic's prefill convention (EntriesController::create): ?values[field]=…
+        if (is_array($prefill = $request->input('values'))) {
+            $values = [...$values, ...$prefill];
+        }
+
+        $fields = $blueprint->fields()->addValues($values)->preProcess();
 
         return Inertia::render('simple-redirects::Publish', [
             'title'            => __('simple-redirects::messages.create_redirect'),
