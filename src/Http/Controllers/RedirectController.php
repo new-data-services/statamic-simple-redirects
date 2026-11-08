@@ -69,15 +69,19 @@ class RedirectController extends CpController
     {
         $this->authorize('manage redirects');
 
-        $values = $request->values ?? [];
+        $blueprint = (new RedirectBlueprint)();
+        $values    = $blueprint->fields()->values()->all();
+
+        if (is_array($prefill = $request->input('values'))) {
+            $values = [...$values, ...$prefill];
+        }
 
         $values = $this->runHooksWith('creating-redirect', [
             'redirect' => Redirect::make(),
             'values'   => $values,
         ])->values ?? $values;
 
-        $blueprint = (new RedirectBlueprint)();
-        $fields    = $blueprint->fields()->addValues($values)->preProcess();
+        $fields = $blueprint->fields()->addValues($values)->preProcess();
 
         return Inertia::render('simple-redirects::Publish', [
             'title'            => __('simple-redirects::messages.create_redirect'),
