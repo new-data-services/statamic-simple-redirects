@@ -3,7 +3,6 @@
 namespace Ndx\SimpleRedirect\Tests\Concerns;
 
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\ParallelTesting;
 use Statamic\Facades\Blink;
 
 trait WithFileDriver
@@ -40,12 +39,5 @@ trait WithFileDriver
 
         File::deleteDirectory(storage_path("test-redirects{$suffix}"));
         File::deleteDirectory(storage_path("test-redirects-tree{$suffix}"));
-    }
-
-    protected function getSuffix(): string
-    {
-        $token = ParallelTesting::token() ?: getenv('TEST_TOKEN') ?: '';
-
-        return $token ? "_{$token}" : '';
     }
 }

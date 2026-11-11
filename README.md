@@ -104,6 +104,29 @@ Redirects can be imported and exported as CSV files directly from the Control Pa
 
 The importer supports various CSV formats, but at least `source` and `destination` columns are required.
 
+### Prefilled Redirects
+
+Link to the create form with prefilled fields, for example from a 404 report:
+
+```
+/cp/redirects/create?values[source]=/old-page&values[destination]=/new-page
+```
+
+## Extending
+
+The addon dispatches `RedirectSaved`, `RedirectDeleted` and `RedirectTreeSaved`, as well as `RedirectMatched` whenever a request gets redirected.
+
+The Control Panel also provides hooks on `RedirectController`: `listing-redirects` to extend the listing, and `creating-redirect` to manipulate values when creating redirects. For example:
+
+```php
+RedirectController::hook('listing-redirects', function ($payload, $next) {
+    $payload->columns->push(Column::make('hits'));
+    $payload->redirects = $payload->redirects->map(fn ($row) => [...$row, 'hits' => /* … */]);
+
+    return $next($payload);
+});
+```
+
 ## About Us
 
 We're a digital agency building web applications with Laravel and websites with Statamic – from initial concept to long-term maintenance.
