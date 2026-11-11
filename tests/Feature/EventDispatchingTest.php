@@ -1,13 +1,19 @@
 <?php
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Route;
 use Ndx\SimpleRedirect\Data\RedirectTree;
 use Ndx\SimpleRedirect\Events\RedirectDeleted;
+use Ndx\SimpleRedirect\Events\RedirectMatched;
 use Ndx\SimpleRedirect\Events\RedirectSaved;
 use Ndx\SimpleRedirect\Events\RedirectTreeSaved;
 use Ndx\SimpleRedirect\Facades\Redirect;
+use Ndx\SimpleRedirect\Http\Middleware\HandleRedirects;
 use Ndx\SimpleRedirect\Tests\Concerns\WithFileDriver;
 use Statamic\Facades\User;
+
+use function Illuminate\Events\queueable;
 
 uses(WithFileDriver::class);
 
@@ -163,5 +169,79 @@ describe('RedirectTreeSaved event', function () {
         Event::assertDispatched(RedirectTreeSaved::class, function ($event) use ($user) {
             return $event->authenticatedUser?->email() === $user->email();
         });
+    });
+});
+
+describe('RedirectMatched event', function () {
+    beforeEach(function () {
+        Route::middleware(['web', HandleRedirects::class])
+            ->any('{any}', fn () => abort(404))
+            ->where('any', '.*');
+    });
+
+    it('dispatches RedirectMatched event when a redirect matches', function () {
+        Event::fake([RedirectMatched::class]);
+
+        $redirect = Redirect::make()->source('/blog/*')->destination('/news/$1');
+        Redirect::save($redirect);
+
+        $this->get('/blog/hello?utm_source=newsletter')->assertRedirect('/news/hello?utm_source=newsletter');
+
+        Event::assertDispatched(RedirectMatched::class, function ($event) use ($redirect) {
+            return $event->redirect->id() === $redirect->id()
+                && $event->matchedUrl     === '/blog/hello'
+                && $event->destination    === '/news/hello?utm_source=newsletter';
+        });
+    });
+
+    it('does not dispatch RedirectMatched event without a match', function () {
+        Event::fake([RedirectMatched::class]);
+
+        Redirect::save(Redirect::make()->source('/old')->destination('/new'));
+
+        $this->get('/unknown')->assertNotFound();
+
+        Event::assertNotDispatched(RedirectMatched::class);
+    });
+
+    it('does not dispatch RedirectMatched event for disabled redirects', function () {
+        Event::fake([RedirectMatched::class]);
+
+        Redirect::save(Redirect::make()->source('/old')->destination('/new')->enabled(false));
+
+        $this->get('/old')->assertNotFound();
+
+        Event::assertNotDispatched(RedirectMatched::class);
+    });
+
+    it('populates authenticatedUser', function () {
+        $user = User::make()->email('test@example.com')->save();
+        $this->actingAs($user);
+
+        Event::fake([RedirectMatched::class]);
+
+        Redirect::save(Redirect::make()->source('/old')->destination('/new'));
+
+        $this->get('/old')->assertRedirect('/new');
+
+        Event::assertDispatched(RedirectMatched::class, function ($event) use ($user) {
+            return $event->authenticatedUser?->email() === $user->email();
+        });
+    });
+
+    it('works with queued listeners', function () {
+        $user = User::make()->email('test@example.com')->save();
+        $this->actingAs($user);
+
+        Event::listen(queueable(function (RedirectMatched $event) {
+            Cache::put('matched-redirect', [$event->redirect->id(), $event->matchedUrl, $event->destination]);
+        }));
+
+        $redirect = Redirect::make()->source('/old')->destination('/new');
+        Redirect::save($redirect);
+
+        $this->get('/old')->assertRedirect('/new');
+
+        expect(Cache::get('matched-redirect'))->toBe([$redirect->id(), '/old', '/new']);
     });
 });

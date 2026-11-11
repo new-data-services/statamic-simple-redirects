@@ -42,7 +42,7 @@ class HandleRedirects
 
                 $destination = $this->buildDestination($redirect, $candidate, $queryString, $site);
 
-                RedirectMatched::dispatch($redirect, $request, $candidate, $destination);
+                RedirectMatched::dispatch($redirect, $candidate, $destination);
 
                 return redirect($destination, $redirect->statusCode());
             }

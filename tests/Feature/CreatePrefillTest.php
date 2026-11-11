@@ -1,14 +1,13 @@
 <?php
 
+use Illuminate\Support\Facades\Cache;
+use Ndx\SimpleRedirect\Http\Controllers\RedirectController;
 use Ndx\SimpleRedirect\Tests\Concerns\WithFileDriver;
 use Statamic\Facades\User;
 
 uses(WithFileDriver::class);
 
 beforeEach(function () {
-    // The CP refuses to serve more than one user without Pro, and the test environment already has one.
-    config()->set('statamic.editions.pro', true);
-
     $this->user = tap(User::make()->email('test@example.com')->makeSuper())->save();
 });
 
@@ -36,4 +35,35 @@ it('leaves the form untouched without values', function () {
 
 it('ignores values that are not an array', function () {
     expect(createFormValues(['values' => 'foo'])['source'] ?? null)->toBeEmpty();
+});
+
+it('ignores values for unknown fields', function () {
+    expect(createFormValues(['values' => ['source' => '/old', 'unknown' => 'foo']]))->not->toHaveKey('unknown');
+});
+
+it('passes the prefilled values to the creating-redirect hook', function () {
+    RedirectController::hook('creating-redirect', function ($payload, $next) {
+        Cache::put('hook-values', $payload->values);
+
+        return $next($payload);
+    });
+
+    createFormValues(['values' => ['source' => '/old']]);
+
+    expect(Cache::get('hook-values'))->toBe(['source' => '/old']);
+});
+
+it('lets the creating-redirect hook change values', function () {
+    RedirectController::hook('creating-redirect', function ($payload, $next) {
+        $payload->values = [...$payload->values, 'destination' => '/new', 'status_code' => '302'];
+
+        return $next($payload);
+    });
+
+    expect(createFormValues(['values' => ['source' => '/old']]))->toMatchArray([
+        'source'      => '/old',
+        'destination' => '/new',
+        'status_code' => '302',
+        'enabled'     => true,
+    ]);
 });
