@@ -13,6 +13,7 @@ return [
     'delete_confirmation'      => 'Möchtest du diese Weiterleitung wirklich löschen?',
     'redirects_reordered'      => 'Sortierung gespeichert',
     'order_save_failed'        => 'Sortierung konnte nicht gespeichert werden',
+    'reorder_out_of_date'      => 'Die Liste wurde inzwischen geändert. Bitte erneut sortieren.',
     'save_failed'              => 'Speichern fehlgeschlagen',
     'export_csv'               => 'CSV exportieren',
     'import_csv'               => 'CSV importieren',

@@ -13,6 +13,7 @@ return [
     'delete_confirmation'      => 'Are you sure you want to delete this redirect?',
     'redirects_reordered'      => 'Redirects reordered',
     'order_save_failed'        => 'Failed to save order',
+    'reorder_out_of_date'      => 'The list has changed in the meantime. Please reorder again.',
     'save_failed'              => 'Failed to save',
     'export_csv'               => 'Export CSV',
     'import_csv'               => 'Import CSV',

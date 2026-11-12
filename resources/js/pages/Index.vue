@@ -1,12 +1,12 @@
 <script setup>
-import { ref, getCurrentInstance, onBeforeUnmount } from 'vue'
+import { ref, computed, getCurrentInstance, onBeforeUnmount } from 'vue'
 import { Head, router } from '@statamic/cms/inertia'
 import { Header, Button, Listing, Badge, Dropdown, DropdownMenu, DropdownItem, StatusIndicator, Icon, EmptyStateMenu, EmptyStateItem } from '@statamic/cms/ui'
 
 const props = defineProps({
     title: String,
-    redirects: Array,
-    columns: Array,
+    listingUrl: String,
+    redirectsCount: Number,
     createUrl: String,
     reorderUrl: String,
     actionUrl: String,
@@ -17,9 +17,12 @@ const props = defineProps({
 const preferencesPrefix = 'simple-redirects'
 const instance = getCurrentInstance()
 const reordering = ref(false)
+const allRedirectsLoaded = ref(false)
 const reorderedItems = ref(null)
-const listingKey = ref(0)
+const listing = ref(null)
 const fileInput = ref(null)
+
+const listingParameters = computed(() => reordering.value ? { reordering: 1 } : {})
 
 const saveKeyBinding = ref(Statamic.$keys.bindGlobal(['mod+s'], (e) => {
     if (reordering.value) {
@@ -30,7 +33,22 @@ const saveKeyBinding = ref(Statamic.$keys.bindGlobal(['mod+s'], (e) => {
 
 onBeforeUnmount(() => saveKeyBinding.value?.destroy())
 
+function startReorder() {
+    allRedirectsLoaded.value = false
+    reordering.value = true
+}
+
+function handleRequestCompleted() {
+    if (reordering.value) {
+        allRedirectsLoaded.value = true
+    }
+}
+
 function handleReordered(items) {
+    if (! allRedirectsLoaded.value) {
+        return
+    }
+
     reorderedItems.value = items
 }
 
@@ -49,7 +67,14 @@ function saveOrder() {
             reorderedItems.value = null
             reordering.value = false
         })
-        .catch(() => {
+        .catch((error) => {
+            if (error.response?.status === 409) {
+                Statamic.$toast.error(error.response.data.message)
+                cancelReorder()
+
+                return
+            }
+
             Statamic.$toast.error(__('simple-redirects::messages.order_save_failed'))
         })
 }
@@ -57,7 +82,20 @@ function saveOrder() {
 function cancelReorder() {
     reorderedItems.value = null
     reordering.value = false
-    listingKey.value++
+}
+
+function refreshCount() {
+    router.reload({ only: ['redirectsCount'] })
+}
+
+function refreshListing() {
+    if (! listing.value) {
+        router.reload()
+
+        return
+    }
+
+    listing.value.refresh()
 }
 
 function triggerImport() {
@@ -77,7 +115,7 @@ function handleImportFile(event) {
     instance.proxy.$axios.post(props.importUrl, formData)
         .then(() => {
             Statamic.$toast.success(__('simple-redirects::messages.import_complete'))
-            router.reload()
+            refreshListing()
         })
         .catch(() => {
             Statamic.$toast.error(__('simple-redirects::messages.import_failed'))
@@ -93,7 +131,7 @@ function handleImportFile(event) {
     <div>
         <Head :title="title" />
 
-        <template v-if="redirects.length">
+        <template v-if="redirectsCount">
             <Header :title="title" icon="moved">
                 <Dropdown v-if="! reordering">
                     <template #trigger>
@@ -117,14 +155,14 @@ function handleImportFile(event) {
                 </Dropdown>
 
                 <Button
-                    v-if="! reordering && redirects.length > 1"
-                    @click="reordering = true"
+                    v-if="! reordering && redirectsCount > 1"
+                    @click="startReorder"
                     :text="__('Reorder')"
                 />
 
                 <template v-if="reordering">
                     <Button @click="cancelReorder" :text="__('Cancel')" />
-                    <Button @click="saveOrder" :text="__('Save Order')" variant="primary" />
+                    <Button @click="saveOrder" :text="__('Save Order')" :disabled="! allRedirectsLoaded" variant="primary" />
                 </template>
 
                 <Button
@@ -136,9 +174,9 @@ function handleImportFile(event) {
             </Header>
 
             <Listing
-                :key="listingKey"
-                :items="redirects"
-                :columns="columns"
+                ref="listing"
+                :url="listingUrl"
+                :additional-parameters="listingParameters"
                 :action-url="actionUrl"
                 :preferences-prefix="preferencesPrefix"
                 :allow-search="true"
@@ -146,8 +184,11 @@ function handleImportFile(event) {
                 :allow-presets="false"
                 :reorderable="reordering"
                 :sortable="false"
+                :show-pagination-page-links="! reordering"
+                :show-pagination-per-page-selector="! reordering"
                 @reordered="handleReordered"
-                @refreshing="router.reload()"
+                @request-completed="handleRequestCompleted"
+                @refreshing="refreshCount"
             >
                 <template #cell-source="{ row, value }">
                     <div class="flex items-center gap-2">
@@ -179,7 +220,7 @@ function handleImportFile(event) {
             </Listing>
         </template>
 
-        <template v-if="! redirects.length">
+        <template v-if="! redirectsCount">
             <header class="py-8 mt-8 text-center">
                 <h1 class="text-[25px] font-medium antialiased flex justify-center items-center gap-2 sm:gap-3">
                     <Icon name="moved" class="size-5 text-gray-500" />
