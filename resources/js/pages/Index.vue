@@ -6,6 +6,7 @@ import { Header, Button, Listing, Badge, Dropdown, DropdownMenu, DropdownItem, S
 const props = defineProps({
     title: String,
     listingUrl: String,
+    filters: Array,
     redirectsCount: Number,
     createUrl: String,
     reorderUrl: String,
@@ -177,6 +178,7 @@ function handleImportFile(event) {
                 ref="listing"
                 :url="listingUrl"
                 :additional-parameters="listingParameters"
+                :filters="filters"
                 :action-url="actionUrl"
                 :preferences-prefix="preferencesPrefix"
                 :allow-search="true"

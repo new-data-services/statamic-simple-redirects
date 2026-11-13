@@ -15,16 +15,20 @@ use Ndx\SimpleRedirect\Http\Resources\Redirects;
 use Statamic\CP\Column;
 use Statamic\CP\Columns;
 use Statamic\Extensions\Pagination\LengthAwarePaginator;
+use Statamic\Facades\Scope;
 use Statamic\Facades\Site;
 use Statamic\Http\Controllers\CP\CpController;
+use Statamic\Http\Requests\FilteredRequest;
+use Statamic\Query\ItemQueryBuilder;
+use Statamic\Query\Scopes\Filters\Concerns\QueriesFilters;
 use Statamic\Statamic;
 use Statamic\Support\Traits\Hookable;
 
 class RedirectController extends CpController
 {
-    use Hookable;
+    use Hookable, QueriesFilters;
 
-    public function index(Request $request): Response|JsonResponse
+    public function index(FilteredRequest $request): Response|JsonResponse
     {
         $this->authorize('manage redirects');
 
@@ -35,6 +39,7 @@ class RedirectController extends CpController
         return Inertia::render('simple-redirects::Index', [
             'title'          => __('simple-redirects::messages.redirects'),
             'listingUrl'     => cp_route('simple-redirects.index'),
+            'filters'        => Scope::filters('redirects'),
             'redirectsCount' => Redirect::all()->count(),
             'createUrl'      => cp_route('simple-redirects.create'),
             'reorderUrl'     => cp_route('simple-redirects.reorder'),
@@ -215,11 +220,18 @@ class RedirectController extends CpController
         ]);
     }
 
-    protected function listing(Request $request): JsonResponse
+    protected function listing(FilteredRequest $request): JsonResponse
     {
-        $reordering = $request->boolean('reordering');
-        $redirects  = Redirect::ordered()->values();
-        $search     = $request->input('search');
+        $reordering         = $request->boolean('reordering');
+        $redirects          = Redirect::ordered()->values();
+        $search             = $request->input('search');
+        $activeFilterBadges = [];
+
+        if (! $reordering) {
+            $query              = (new ItemQueryBuilder)->withItems($redirects);
+            $activeFilterBadges = $this->queryFilters($query, $request->filters);
+            $redirects          = $query->get()->values();
+        }
 
         if (! $reordering && filled($search)) {
             $redirects = $redirects->filter(fn (RedirectContract $redirect) => $this->matchesSearch($redirect, $search))->values();
@@ -239,6 +251,7 @@ class RedirectController extends CpController
 
         return (new Redirects($paginator))
             ->columns($payload->columns)
+            ->additional(['meta' => ['activeFilterBadges' => $activeFilterBadges]])
             ->response();
     }
 
