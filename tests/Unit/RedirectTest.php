@@ -105,6 +105,12 @@ describe('source normalization', function () {
 
         expect($redirect->source())->toBe('/old-page');
     });
+
+    it('does not modify regex source when regex is enabled after setting the source', function () {
+        $redirect = (new Redirect)->source('^/old-page')->regex(true);
+
+        expect($redirect->source())->toBe('^/old-page');
+    });
 });
 
 describe('wildcard pattern matching', function () {
@@ -333,6 +339,20 @@ describe('model conversion', function () {
         expect($redirect->enabled())->toBeFalse();
         expect($redirect->order())->toBe(5);
         expect($redirect->model())->toBe($model);
+    });
+
+    it('keeps regex source from eloquent model untouched', function () {
+        $model = (new RedirectModel)->forceFill([
+            'id'          => 'model-id',
+            'source'      => '^/from-model',
+            'destination' => '/to-model',
+            'regex'       => true,
+            'status_code' => 301,
+            'enabled'     => true,
+            'order'       => 0,
+        ]);
+
+        expect(Redirect::fromModel($model)->source())->toBe('^/from-model');
     });
 
     it('converts redirect to eloquent model', function () {

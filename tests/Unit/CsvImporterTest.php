@@ -205,6 +205,17 @@ describe('external format support', function () {
         expect($exact->isRegex())->toBeFalse();
         expect($regex->isRegex())->toBeTrue();
     });
+
+    it('keeps regex sources untouched', function () {
+        $csv = createCsv([
+            ['source', 'destination', 'match_type'],
+            ['^/blog/(.*)$', '/news/$1', 'regex'],
+        ]);
+
+        (new CsvImporter(new ColumnMapper))->import($csv);
+
+        expect(Redirect::all()->first()->source())->toBe('^/blog/(.*)$');
+    });
 });
 
 describe('order column', function () {
