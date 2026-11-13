@@ -104,14 +104,6 @@ Redirects can be imported and exported as CSV files directly from the Control Pa
 
 The importer supports various CSV formats, but at least `source` and `destination` columns are required.
 
-### Prefilled Redirects
-
-Link to the create form with prefilled fields, for example from a 404 report:
-
-```
-/cp/redirects/create?values[source]=/old-page&values[destination]=/new-page
-```
-
 ## Extending
 
 The addon dispatches `RedirectSaved`, `RedirectDeleted` and `RedirectTreeSaved`, as well as `RedirectMatched` whenever a request gets redirected.
