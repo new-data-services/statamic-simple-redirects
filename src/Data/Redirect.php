@@ -51,8 +51,12 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
     public function source(?string $source = null)
     {
         return $this->fluentlyGetOrSet('source')
-            ->setter(function ($value) {
-                return static::normalizeSource($value, $this->regex);
+            ->getter(function ($source) {
+                if ($source === null) {
+                    return null;
+                }
+
+                return static::normalizeSource($source, $this->regex);
             })
             ->args(func_get_args());
     }
@@ -64,15 +68,7 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
 
     public function regex(?bool $regex = null)
     {
-        return $this->fluentlyGetOrSet('regex')
-            ->setter(function ($value) {
-                if ($this->source) {
-                    $this->source = static::normalizeSource($this->source, $value);
-                }
-
-                return $value;
-            })
-            ->args(func_get_args());
+        return $this->fluentlyGetOrSet('regex')->args(func_get_args());
     }
 
     public function statusCode(?int $statusCode = null)
@@ -139,7 +135,7 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
 
         $model->fill([
             'id'          => $this->id,
-            'source'      => $this->source,
+            'source'      => $this->source(),
             'destination' => $this->destination,
             'regex'       => $this->regex,
             'status_code' => $this->statusCode,
@@ -199,8 +195,8 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
     protected function getCompiledPattern(): string
     {
         return $this->regex
-            ? static::normalizeRegexPattern($this->source)
-            : $this->compileWildcardPattern($this->source);
+            ? static::normalizeRegexPattern($this->source())
+            : $this->compileWildcardPattern($this->source());
     }
 
     protected function compileWildcardPattern(string $pattern): string
@@ -246,7 +242,7 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
     {
         return [
             'id'          => $this->id,
-            'source'      => $this->source,
+            'source'      => $this->source(),
             'destination' => $this->destination,
             'regex'       => $this->regex,
             'status_code' => $this->statusCode,
@@ -258,7 +254,7 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
     public function fileData(): array
     {
         $data = [
-            'source'      => $this->source,
+            'source'      => $this->source(),
             'destination' => $this->destination,
             'status_code' => $this->statusCode,
         ];
