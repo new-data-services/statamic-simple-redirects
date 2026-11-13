@@ -20,11 +20,10 @@ function listingColumns(): Collection
 {
     $response = test()
         ->actingAs(test()->user)
-        ->withHeader('X-Inertia', 'true')
-        ->get(cp_route('simple-redirects.index'))
+        ->getJson(cp_route('simple-redirects.index'))
         ->assertOk();
 
-    return collect($response->json('props.columns'));
+    return collect($response->json('meta.columns'));
 }
 
 it('hides the sites column by default', function () {
@@ -61,12 +60,11 @@ it('lets the listing-redirects hook add columns and row values', function () {
     });
 
     $response = $this->actingAs($this->user)
-        ->withHeader('X-Inertia', 'true')
-        ->get(cp_route('simple-redirects.index'))
+        ->getJson(cp_route('simple-redirects.index'))
         ->assertOk();
 
-    expect(collect($response->json('props.columns'))->pluck('field'))->toContain('hits')
-        ->and($response->json('props.redirects.0'))->toMatchArray(['id' => $redirect->id(), 'hits' => 42]);
+    expect(collect($response->json('meta.columns'))->pluck('field'))->toContain('hits')
+        ->and($response->json('data.0'))->toMatchArray(['id' => $redirect->id(), 'hits' => 42]);
 });
 
 it('applies the user preferences to columns added by the listing-redirects hook', function () {
@@ -79,4 +77,36 @@ it('applies the user preferences to columns added by the listing-redirects hook'
     });
 
     expect(listingColumns()->pluck('field')->take(2)->all())->toBe(['hits', 'source']);
+});
+
+it('runs the listing-redirects hook only for the requested page', function () {
+    foreach (range(1, 30) as $number) {
+        Redirect::save(Redirect::make()->source("/page-{$number}")->destination("/new-{$number}"));
+    }
+
+    $hookedRows = null;
+
+    RedirectController::hook('listing-redirects', function ($payload, $next) use (&$hookedRows) {
+        $hookedRows = $payload->redirects->count();
+
+        return $next($payload);
+    });
+
+    $this->actingAs($this->user)
+        ->getJson(cp_route('simple-redirects.index', ['perPage' => 10]))
+        ->assertOk();
+
+    expect($hookedRows)->toBe(10);
+});
+
+it('applies the columns requested by the listing', function () {
+    $response = $this->actingAs($this->user)
+        ->getJson(cp_route('simple-redirects.index', ['columns' => 'sites,source']))
+        ->assertOk();
+
+    $columns = collect($response->json('meta.columns'));
+
+    expect($columns->pluck('field')->take(2)->all())->toBe(['sites', 'source'])
+        ->and($columns->firstWhere('field', 'sites')['visible'])->toBeTrue()
+        ->and($columns->firstWhere('field', 'destination')['visible'])->toBeFalse();
 });

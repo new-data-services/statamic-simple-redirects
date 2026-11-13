@@ -13,6 +13,7 @@ return [
     'delete_confirmation'      => 'Weet je zeker dat je deze redirect wilt verwijderen?',
     'redirects_reordered'      => 'Redirects opnieuw geordend',
     'order_save_failed'        => 'Volgorde opslaan mislukt',
+    'reorder_out_of_date'      => 'De lijst is intussen gewijzigd. Sorteer opnieuw.',
     'save_failed'              => 'Opslaan mislukt',
     'export_csv'               => 'CSV exporteren',
     'import_csv'               => 'CSV importeren',
