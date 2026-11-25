@@ -43,7 +43,7 @@ class RedirectSite extends Filter
 
     public function visibleTo($key)
     {
-        return $key === 'redirects' && Site::multiEnabled();
+        return $key === 'simple-redirects' && Site::multiEnabled();
     }
 
     protected function options(): array

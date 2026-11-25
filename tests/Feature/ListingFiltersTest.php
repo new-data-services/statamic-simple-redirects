@@ -3,6 +3,7 @@
 use Illuminate\Testing\TestResponse;
 use Ndx\SimpleRedirect\Facades\Redirect;
 use Ndx\SimpleRedirect\Tests\Concerns\WithFileDriver;
+use Ndx\SimpleRedirect\Tests\Fixtures\OtherRedirectSiteFilter;
 use Statamic\Facades\Site;
 use Statamic\Facades\User;
 use Statamic\Sites\Site as SiteInstance;
@@ -95,6 +96,30 @@ it('ignores filters while reordering', function () {
     $response = fetchFilteredListing(['redirect_status' => ['status' => 'enabled']], ['reordering' => 1]);
 
     expect(listedSources($response))->toBe(['/enabled', '/disabled']);
+});
+
+it('ignores redirect filters registered for another listing', function () {
+    enableMultisite();
+    OtherRedirectSiteFilter::register();
+
+    Redirect::save(Redirect::make()->source('/enabled')->destination('/new'));
+    Redirect::save(Redirect::make()->source('/disabled')->destination('/new')->enabled(false));
+
+    $response = fetchFilteredListing([
+        'other_redirect_site' => ['site' => 'de'],
+        'redirect_status'     => ['status' => 'enabled'],
+    ]);
+
+    expect(listedSources($response))->toBe(['/enabled'])
+        ->and($response->json('meta.activeFilterBadges'))->toBe(['redirect_status' => 'Enabled']);
+
+    $page = $this->actingAs($this->user)
+        ->withHeader('X-Inertia', 'true')
+        ->get(cp_route('simple-redirects.index'))
+        ->assertOk();
+
+    expect(collect($page->json('props.filters'))->pluck('handle')->all())
+        ->not->toContain('other_redirect_site');
 });
 
 it('offers the site filter only on multisite', function (bool $multisite, array $expectedFilters) {

@@ -10,7 +10,7 @@ class RedirectFields extends Fields
 {
     public function visibleTo($key)
     {
-        return $key === 'redirects';
+        return $key === 'simple-redirects';
     }
 
     protected function getBlueprints(): Collection
