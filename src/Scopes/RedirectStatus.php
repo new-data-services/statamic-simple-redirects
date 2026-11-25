@@ -35,7 +35,7 @@ class RedirectStatus extends Filter
 
     public function visibleTo($key)
     {
-        return $key === 'redirects';
+        return $key === 'simple-redirects';
     }
 
     protected function options(): array

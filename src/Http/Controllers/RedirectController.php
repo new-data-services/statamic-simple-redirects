@@ -4,6 +4,7 @@ namespace Ndx\SimpleRedirect\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -39,7 +40,7 @@ class RedirectController extends CpController
         return Inertia::render('simple-redirects::Index', [
             'title'          => __('simple-redirects::messages.redirects'),
             'listingUrl'     => cp_route('simple-redirects.index'),
-            'filters'        => Scope::filters('redirects'),
+            'filters'        => $this->listingFilters(),
             'redirectsCount' => Redirect::all()->count(),
             'createUrl'      => cp_route('simple-redirects.create'),
             'reorderUrl'     => cp_route('simple-redirects.reorder'),
@@ -229,7 +230,9 @@ class RedirectController extends CpController
 
         if (! $reordering) {
             $query              = (new ItemQueryBuilder)->withItems($redirects);
-            $activeFilterBadges = $this->queryFilters($query, $request->filters);
+            $filterHandles      = $this->listingFilters()->map->handle()->all();
+            $filters            = collect($request->filters)->only($filterHandles);
+            $activeFilterBadges = $this->queryFilters($query, $filters);
             $redirects          = $query->get()->values();
         }
 
@@ -253,6 +256,11 @@ class RedirectController extends CpController
             ->columns($payload->columns)
             ->additional(['meta' => ['activeFilterBadges' => $activeFilterBadges]])
             ->response();
+    }
+
+    protected function listingFilters(): Collection
+    {
+        return Scope::filters('simple-redirects');
     }
 
     protected function matchesSearch(RedirectContract $redirect, string $search): bool
