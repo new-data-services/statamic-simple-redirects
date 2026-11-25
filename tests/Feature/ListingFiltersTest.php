@@ -3,9 +3,9 @@
 use Illuminate\Testing\TestResponse;
 use Ndx\SimpleRedirect\Facades\Redirect;
 use Ndx\SimpleRedirect\Tests\Concerns\WithFileDriver;
+use Ndx\SimpleRedirect\Tests\Fixtures\OtherRedirectSiteFilter;
 use Statamic\Facades\Site;
 use Statamic\Facades\User;
-use Statamic\Query\Scopes\Filter;
 use Statamic\Sites\Site as SiteInstance;
 
 uses(WithFileDriver::class);
@@ -139,23 +139,3 @@ it('offers the site filter only on multisite', function (bool $multisite, array 
     'single site' => [false, ['redirect_fields', 'redirect_status']],
     'multisite'   => [true, ['redirect_fields', 'redirect_site', 'redirect_status']],
 ]);
-
-class OtherRedirectSiteFilter extends Filter
-{
-    protected static $handle = 'other_redirect_site';
-
-    public function visibleTo($key)
-    {
-        return $key === 'redirects';
-    }
-
-    public function autoApply()
-    {
-        return ['site' => 'de'];
-    }
-
-    public function apply($query, $values)
-    {
-        $query->where('site', $values['site']);
-    }
-}
