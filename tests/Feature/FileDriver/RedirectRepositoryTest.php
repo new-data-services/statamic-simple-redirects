@@ -177,16 +177,21 @@ describe('candidate lookup index', function () {
     it('picks up redirect files changed on disk', function () {
         config()->set('statamic.stache.watcher', true);
 
+        $simulateNextRequest = function () {
+            app('stache')->registerStore((new RedirectsStore)->directory(app('stache')->store('redirects')->directory()));
+            Blink::flush();
+        };
+
         $redirect = tap(Redirect::make()->source('/old')->destination('/new'), fn ($redirect) => Redirect::save($redirect));
+
+        $simulateNextRequest();
 
         expect(Redirect::orderedEnabledCandidates(['/old'])->map->id()->all())->toBe([$redirect->id()]);
 
         File::put($redirect->path(), "---\nsource: /changed\ndestination: /new\nstatus_code: 301\n---\n");
         touch($redirect->path(), time() + 10);
 
-        $freshStore = (new RedirectsStore)->directory(app('stache')->store('redirects')->directory());
-        app('stache')->registerStore($freshStore);
-        Blink::flush();
+        $simulateNextRequest();
 
         expect(Redirect::orderedEnabledCandidates(['/changed'])->map->id()->all())->toBe([$redirect->id()]);
         expect(Redirect::orderedEnabledCandidates(['/old'])->all())->toBe([]);
