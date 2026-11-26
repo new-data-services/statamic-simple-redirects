@@ -3,6 +3,7 @@
 namespace Ndx\SimpleRedirect\Repositories;
 
 use Illuminate\Support\Collection;
+use Ndx\SimpleRedirect\Contracts\FindsRedirectCandidates;
 use Ndx\SimpleRedirect\Contracts\Redirect;
 use Ndx\SimpleRedirect\Contracts\RedirectRepository as RedirectRepositoryContract;
 use Ndx\SimpleRedirect\Contracts\RedirectTreeRepository;
@@ -13,7 +14,7 @@ use Ndx\SimpleRedirect\Stache\RedirectsStore;
 use Statamic\Facades\Blink;
 use Statamic\Stache\Stache;
 
-class FileRedirectRepository implements RedirectRepositoryContract
+class FileRedirectRepository implements FindsRedirectCandidates, RedirectRepositoryContract
 {
     public function __construct(protected Stache $stache) {}
 
@@ -44,6 +45,23 @@ class FileRedirectRepository implements RedirectRepositoryContract
         return Blink::once('simple-redirects-ordered-enabled', function () {
             return $this->applyTreeOrder($this->enabled());
         });
+    }
+
+    public function orderedEnabledCandidates(array $urls): Collection
+    {
+        $lookupKeys = collect($urls)->map(fn (string $url) => RedirectData::lookupKey($url))->unique();
+
+        $candidateIds = $this->store()->index('lookup_key')->items()
+            ->filter(fn (?string $lookupKey) => $lookupKey === null || $lookupKeys->contains($lookupKey))
+            ->keys();
+
+        $candidates = $this->store()->getItems(
+            $this->store()->paths()->keys()->intersect($candidateIds)->values()
+        );
+
+        return $this->applyTreeOrder(
+            $candidates->filter(fn (Redirect $redirect) => $redirect->isEnabled())
+        );
     }
 
     public function save(Redirect $redirect): bool

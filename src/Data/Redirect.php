@@ -157,6 +157,16 @@ class Redirect implements Arrayable, Augmentable, RedirectContract
         return $this->regex;
     }
 
+    public function isPattern(): bool
+    {
+        return $this->regex || str_contains((string) $this->source, '*');
+    }
+
+    public static function lookupKey(string $url): string
+    {
+        return strtolower($url);
+    }
+
     public function matches(string $url): bool
     {
         $pattern = $this->getCompiledPattern();

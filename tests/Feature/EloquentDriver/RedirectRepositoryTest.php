@@ -2,6 +2,7 @@
 
 use Ndx\SimpleRedirect\Data\Redirect as RedirectData;
 use Ndx\SimpleRedirect\Facades\Redirect;
+use Ndx\SimpleRedirect\Models\Redirect as RedirectModel;
 use Ndx\SimpleRedirect\Tests\Concerns\WithEloquentDriver;
 use Statamic\Facades\Blink;
 
@@ -237,4 +238,33 @@ describe('blink cache', function () {
 
         expect($orderedEnabled)->toHaveCount(1);
     });
+});
+
+describe('candidate lookup', function () {
+    beforeEach(function () {
+        $this->wildcard = tap(Redirect::make()->source('/blog/*')->destination('/news'), fn ($redirect) => Redirect::save($redirect));
+        $this->exact    = tap(Redirect::make()->source('/Old-Page')->destination('/new-page'), fn ($redirect) => Redirect::save($redirect));
+        $this->other    = tap(Redirect::make()->source('/unrelated')->destination('/new-page'), fn ($redirect) => Redirect::save($redirect));
+        $this->regex    = tap(Redirect::make()->regex(true)->source('^/news/(\d+)$')->destination('/news'), fn ($redirect) => Redirect::save($redirect));
+        $this->disabled = tap(Redirect::make()->source('/old-page')->destination('/new-page')->enabled(false), fn ($redirect) => Redirect::save($redirect));
+        $this->absolute = tap(Redirect::make()->source('https://example.com/old-page')->destination('/new-page'), fn ($redirect) => Redirect::save($redirect));
+    });
+
+    it('returns pattern redirects and exact matches as candidates in order', function () {
+        $ids = Redirect::orderedEnabledCandidates(['/old-page', '/old-page?x=1'])->map->id()->all();
+
+        expect($ids)->toBe([$this->wildcard->id(), $this->exact->id(), $this->regex->id()]);
+    });
+
+    it('matches exact sources given as absolute url', function () {
+        $ids = Redirect::orderedEnabledCandidates(['https://EXAMPLE.com/old-page'])->map->id()->all();
+
+        expect($ids)->toBe([$this->wildcard->id(), $this->regex->id(), $this->absolute->id()]);
+    });
+});
+
+it('finds exact sources stored without a leading slash', function () {
+    $model = RedirectModel::create(['source' => 'old-page', 'destination' => '/new-page', 'order' => 0]);
+
+    expect(Redirect::orderedEnabledCandidates(['/old-page'])->map->id()->all())->toBe([$model->id]);
 });

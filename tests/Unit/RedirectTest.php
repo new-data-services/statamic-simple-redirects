@@ -606,3 +606,19 @@ describe('sites in toArray', function () {
         expect($redirect->toArray())->toHaveKey('sites', null);
     });
 });
+
+describe('candidate lookup', function () {
+    it('detects pattern redirects', function (string $source, bool $regex, bool $expected) {
+        $redirect = (new Redirect)->regex($regex)->source($source);
+
+        expect($redirect->isPattern())->toBe($expected);
+    })->with([
+        'exact'    => ['/old', false, false],
+        'wildcard' => ['/old/*', false, true],
+        'regex'    => ['^/old/(\d+)$', true, true],
+    ]);
+
+    it('builds case insensitive lookup keys', function () {
+        expect(Redirect::lookupKey('/Old-Page?Foo=Bar'))->toBe('/old-page?foo=bar');
+    });
+});

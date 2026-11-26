@@ -2,10 +2,15 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Route;
+use Ndx\SimpleRedirect\Contracts\FindsRedirectCandidates;
+use Ndx\SimpleRedirect\Contracts\RedirectRepository;
 use Ndx\SimpleRedirect\Facades\Redirect;
 use Ndx\SimpleRedirect\Http\Middleware\HandleRedirects;
+use Ndx\SimpleRedirect\Repositories\FileRedirectRepository;
 use Ndx\SimpleRedirect\Tests\Concerns\WithFileDriver;
+use Ndx\SimpleRedirect\Tests\Fixtures\DelegatingRedirectRepository;
 use Statamic\Facades\Site;
 
 uses(WithFileDriver::class);
@@ -413,5 +418,49 @@ describe('query strings', function () {
 
         $this->get('/own-query-old?utm_source=newsletter')
             ->assertRedirect('/own-query-new?ref=redirect');
+    });
+});
+
+describe('candidate lookup', function () {
+    beforeEach(function () {
+        Route::middleware(['web', HandleRedirects::class])
+            ->any('{any}', fn () => abort(404))
+            ->where('any', '.*');
+    });
+
+    it('matches exact sources case insensitively', function () {
+        Redirect::save(Redirect::make()->source('/Old-Page')->destination('/new-page'));
+
+        $this->get('/old-page')->assertRedirect('/new-page');
+    });
+
+    it('only loads candidate redirects from repositories that support it', function () {
+        $repository = new class(app('stache')) extends FileRedirectRepository
+        {
+            public function orderedEnabled(): Collection
+            {
+                return collect();
+            }
+        };
+
+        app()->instance(RedirectRepository::class, $repository);
+        Redirect::clearResolvedInstances();
+
+        Redirect::save(Redirect::make()->source('/candidate-old')->destination('/candidate-new'));
+
+        $this->get('/candidate-old')->assertRedirect('/candidate-new');
+    });
+
+    it('falls back to all enabled redirects for repositories without candidate lookup', function () {
+        $repository = new DelegatingRedirectRepository(app(RedirectRepository::class));
+
+        app()->instance(RedirectRepository::class, $repository);
+        Redirect::clearResolvedInstances();
+
+        Redirect::save(Redirect::make()->source('/legacy')->destination('/modern'));
+
+        expect($repository)->not->toBeInstanceOf(FindsRedirectCandidates::class);
+
+        $this->get('/legacy')->assertRedirect('/modern');
     });
 });

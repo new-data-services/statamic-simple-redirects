@@ -3,12 +3,17 @@
 namespace Ndx\SimpleRedirect\Stache;
 
 use Ndx\SimpleRedirect\Data\Redirect as RedirectData;
+use Ndx\SimpleRedirect\Stache\Indexes\LookupKey;
 use Statamic\Facades\YAML;
 use Statamic\Stache\Stores\BasicStore;
 use Symfony\Component\Finder\SplFileInfo;
 
 class RedirectsStore extends BasicStore
 {
+    protected $storeIndexes = [
+        'lookup_key' => LookupKey::class,
+    ];
+
     public function key(): string
     {
         return 'redirects';

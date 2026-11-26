@@ -3,7 +3,9 @@
 namespace Ndx\SimpleRedirect\Repositories;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Collection;
+use Ndx\SimpleRedirect\Contracts\FindsRedirectCandidates;
 use Ndx\SimpleRedirect\Contracts\Redirect;
 use Ndx\SimpleRedirect\Contracts\RedirectRepository as RedirectRepositoryContract;
 use Ndx\SimpleRedirect\Data\Redirect as RedirectData;
@@ -12,7 +14,7 @@ use Ndx\SimpleRedirect\Events\RedirectSaved;
 use Ndx\SimpleRedirect\Models\Redirect as RedirectModel;
 use Statamic\Facades\Blink;
 
-class EloquentRedirectRepository implements RedirectRepositoryContract
+class EloquentRedirectRepository implements FindsRedirectCandidates, RedirectRepositoryContract
 {
     public function all(): Collection
     {
@@ -55,6 +57,29 @@ class EloquentRedirectRepository implements RedirectRepositoryContract
                 ->get()
                 ->map(fn (RedirectModel $model) => RedirectData::fromModel($model));
         });
+    }
+
+    public function orderedEnabledCandidates(array $urls): Collection
+    {
+        $query = $this->query();
+
+        $lookupKeys = collect($urls)
+            ->map(fn (string $url) => RedirectData::lookupKey($url))
+            ->flatMap(fn (string $lookupKey) => [$lookupKey, ltrim($lookupKey, '/')])
+            ->unique()
+            ->values();
+
+        $source = $query->getQuery()->getGrammar()->wrap('source');
+
+        return $query
+            ->where('enabled', true)
+            ->where(fn (Builder $query) => $query
+                ->where('regex', true)
+                ->orWhere('source', 'like', '%*%')
+                ->orWhereIn(new Expression("lower({$source})"), $lookupKeys))
+            ->orderBy('order')
+            ->get()
+            ->map(fn (RedirectModel $model) => RedirectData::fromModel($model));
     }
 
     public function save(Redirect $redirect): bool

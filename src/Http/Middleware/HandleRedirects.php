@@ -4,9 +4,11 @@ namespace Ndx\SimpleRedirect\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Ndx\SimpleRedirect\Contracts\FindsRedirectCandidates;
 use Ndx\SimpleRedirect\Contracts\Redirect as RedirectContract;
+use Ndx\SimpleRedirect\Contracts\RedirectRepository;
 use Ndx\SimpleRedirect\Events\RedirectMatched;
-use Ndx\SimpleRedirect\Facades\Redirect;
 use Statamic\Facades\Site;
 use Statamic\Facades\URL;
 use Statamic\Sites\Site as SiteInstance;
@@ -30,7 +32,7 @@ class HandleRedirects
         $site       = Site::current();
         $candidates = $this->candidateUrls($request, $path, $queryString, $site);
 
-        foreach (Redirect::orderedEnabled() as $redirect) {
+        foreach ($this->redirectsFor($candidates) as $redirect) {
             if (! $redirect->appliesToSite($site->handle())) {
                 continue;
             }
@@ -49,6 +51,17 @@ class HandleRedirects
         }
 
         return $response;
+    }
+
+    protected function redirectsFor(array $candidates): Collection
+    {
+        $repository = app(RedirectRepository::class);
+
+        if (! $repository instanceof FindsRedirectCandidates) {
+            return $repository->orderedEnabled();
+        }
+
+        return $repository->orderedEnabledCandidates($candidates);
     }
 
     protected function candidateUrls(Request $request, string $path, string $queryString, SiteInstance $site): array
