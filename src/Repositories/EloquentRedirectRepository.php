@@ -92,7 +92,7 @@ class EloquentRedirectRepository implements FindsRedirectCandidates, RedirectRep
         $model = $redirect->toModel();
         $model->save();
 
-        $redirect->model($model->fresh());
+        $redirect->model($model);
 
         Blink::forget("simple-redirect-{$redirect->id()}");
         Blink::forget('simple-redirects-ordered-enabled');

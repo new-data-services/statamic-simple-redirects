@@ -49,6 +49,19 @@ describe('CsvImporter integration with repository', function () {
 
         expect(Redirect::all())->toHaveCount(2);
     });
+
+    it('skips duplicate rows within the same file', function () {
+        $csv = makeCsv([
+            ['source', 'destination'],
+            ['/old', '/new'],
+            ['/old', '/new'],
+        ]);
+
+        $importer = new CsvImporter(new ColumnMapper);
+        $importer->import($csv);
+
+        expect(Redirect::all())->toHaveCount(1);
+    });
 });
 
 describe('external format integration', function () {

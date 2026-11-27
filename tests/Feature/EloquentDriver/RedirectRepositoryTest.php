@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Ndx\SimpleRedirect\Data\Redirect as RedirectData;
 use Ndx\SimpleRedirect\Facades\Redirect;
 use Ndx\SimpleRedirect\Models\Redirect as RedirectModel;
@@ -206,6 +207,19 @@ describe('auto-order assignment', function () {
             'id'    => $redirect->id(),
             'order' => $originalOrder,
         ]);
+    });
+});
+
+describe('save queries', function () {
+    it('inserts a redirect with a known order in a single query', function () {
+        $redirect = Redirect::make()->source('/old')->destination('/new')->order(5);
+
+        DB::enableQueryLog();
+
+        Redirect::save($redirect);
+
+        expect(DB::getQueryLog())->toHaveCount(1);
+        expect($redirect->model()->exists)->toBeTrue();
     });
 });
 

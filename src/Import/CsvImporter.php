@@ -28,8 +28,8 @@ class CsvImporter
         $availableSites = Site::all()->keys()->all();
 
         $existingRedirects = Redirect::all()
-            ->map(fn ($redirect) => $redirect->source() . '|' . $redirect->destination())
-            ->toArray();
+            ->mapWithKeys(fn ($redirect) => [$redirect->source() . '|' . $redirect->destination() => true])
+            ->all();
 
         $rows = array_map(fn ($record) => $this->transformRow($record, $mapping, $availableSites), iterator_to_array($reader->getRecords()));
         $rows = $this->sortByOrderColumn($rows, $mapping);
@@ -44,7 +44,9 @@ class CsvImporter
                 continue;
             }
 
-            if (in_array($row['source'] . '|' . $row['destination'], $existingRedirects)) {
+            $key = $row['source'] . '|' . $row['destination'];
+
+            if (isset($existingRedirects[$key])) {
                 Log::info('Simple Redirects Import: Skipped row - already exists', [
                     'source'      => $row['source'] ?? null,
                     'destination' => $row['destination'] ?? null,
@@ -54,6 +56,8 @@ class CsvImporter
             }
 
             $this->createRedirect($row);
+
+            $existingRedirects[$key] = true;
         }
     }
 

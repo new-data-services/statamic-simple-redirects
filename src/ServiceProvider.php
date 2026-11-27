@@ -166,11 +166,13 @@ class ServiceProvider extends AddonServiceProvider
 
     protected function bootGitListeners(): self
     {
-        if (config('statamic.git.enabled', false)) {
-            Git::listen(RedirectSaved::class);
-            Git::listen(RedirectDeleted::class);
-            Git::listen(RedirectTreeSaved::class);
+        if (! config('statamic.git.enabled', false) || config('statamic.redirects.driver', 'file') === 'eloquent') {
+            return $this;
         }
+
+        Git::listen(RedirectSaved::class);
+        Git::listen(RedirectDeleted::class);
+        Git::listen(RedirectTreeSaved::class);
 
         return $this;
     }

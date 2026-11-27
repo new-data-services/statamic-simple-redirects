@@ -146,4 +146,15 @@ describe('git integration', function () {
         $reflection = new ReflectionMethod($provider, 'bootGitListeners');
         $reflection->invoke($provider);
     });
+
+    it('does not register git listeners for the eloquent driver', function () {
+        config()->set('statamic.git.enabled', true);
+        config()->set('statamic.redirects.driver', 'eloquent');
+
+        Git::shouldReceive('listen')->never();
+
+        $provider   = new ServiceProvider(app());
+        $reflection = new ReflectionMethod($provider, 'bootGitListeners');
+        $reflection->invoke($provider);
+    });
 });
