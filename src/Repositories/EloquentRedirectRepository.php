@@ -6,19 +6,21 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Collection;
 use Ndx\SimpleRedirect\Contracts\FindsRedirectCandidates;
+use Ndx\SimpleRedirect\Contracts\QueriesRedirects;
 use Ndx\SimpleRedirect\Contracts\Redirect;
 use Ndx\SimpleRedirect\Contracts\RedirectRepository as RedirectRepositoryContract;
 use Ndx\SimpleRedirect\Data\Redirect as RedirectData;
 use Ndx\SimpleRedirect\Events\RedirectDeleted;
 use Ndx\SimpleRedirect\Events\RedirectSaved;
 use Ndx\SimpleRedirect\Models\Redirect as RedirectModel;
+use Ndx\SimpleRedirect\Query\EloquentRedirectQueryBuilder;
 use Statamic\Facades\Blink;
 
-class EloquentRedirectRepository implements FindsRedirectCandidates, RedirectRepositoryContract
+class EloquentRedirectRepository implements FindsRedirectCandidates, QueriesRedirects, RedirectRepositoryContract
 {
     public function all(): Collection
     {
-        return $this->query()
+        return $this->modelQuery()
             ->get()
             ->map(fn (RedirectModel $model) => RedirectData::fromModel($model));
     }
@@ -26,7 +28,7 @@ class EloquentRedirectRepository implements FindsRedirectCandidates, RedirectRep
     public function find(string $id): ?Redirect
     {
         return Blink::once("simple-redirect-{$id}", function () use ($id) {
-            $model = $this->query()->find($id);
+            $model = $this->modelQuery()->find($id);
 
             return $model ? RedirectData::fromModel($model) : null;
         });
@@ -34,7 +36,7 @@ class EloquentRedirectRepository implements FindsRedirectCandidates, RedirectRep
 
     public function enabled(): Collection
     {
-        return $this->query()
+        return $this->modelQuery()
             ->where('enabled', true)
             ->get()
             ->map(fn (RedirectModel $model) => RedirectData::fromModel($model));
@@ -42,8 +44,9 @@ class EloquentRedirectRepository implements FindsRedirectCandidates, RedirectRep
 
     public function ordered(): Collection
     {
-        return $this->query()
+        return $this->modelQuery()
             ->orderBy('order')
+            ->orderBy('id')
             ->get()
             ->map(fn (RedirectModel $model) => RedirectData::fromModel($model));
     }
@@ -51,9 +54,10 @@ class EloquentRedirectRepository implements FindsRedirectCandidates, RedirectRep
     public function orderedEnabled(): Collection
     {
         return Blink::once('simple-redirects-ordered-enabled', function () {
-            return $this->query()
+            return $this->modelQuery()
                 ->where('enabled', true)
                 ->orderBy('order')
+                ->orderBy('id')
                 ->get()
                 ->map(fn (RedirectModel $model) => RedirectData::fromModel($model));
         });
@@ -61,7 +65,7 @@ class EloquentRedirectRepository implements FindsRedirectCandidates, RedirectRep
 
     public function orderedEnabledCandidates(array $urls): Collection
     {
-        $query = $this->query();
+        $query = $this->modelQuery();
 
         $lookupKeys = collect($urls)
             ->map(fn (string $url) => RedirectData::lookupKey($url))
@@ -78,6 +82,7 @@ class EloquentRedirectRepository implements FindsRedirectCandidates, RedirectRep
                 ->orWhere('source', 'like', '%*%')
                 ->orWhereIn(new Expression("lower({$source})"), $lookupKeys))
             ->orderBy('order')
+            ->orderBy('id')
             ->get()
             ->map(fn (RedirectModel $model) => RedirectData::fromModel($model));
     }
@@ -85,7 +90,7 @@ class EloquentRedirectRepository implements FindsRedirectCandidates, RedirectRep
     public function save(Redirect $redirect): bool
     {
         if ($redirect->order() === null) {
-            $maxOrder = $this->query()->max('order') ?? -1;
+            $maxOrder = $this->modelQuery()->max('order') ?? -1;
             $redirect->order($maxOrder + 1);
         }
 
@@ -104,7 +109,7 @@ class EloquentRedirectRepository implements FindsRedirectCandidates, RedirectRep
 
     public function delete(Redirect $redirect): bool
     {
-        $this->query()->where('id', $redirect->id())->delete();
+        $this->modelQuery()->where('id', $redirect->id())->delete();
 
         Blink::forget("simple-redirect-{$redirect->id()}");
         Blink::forget('simple-redirects-ordered-enabled');
@@ -121,14 +126,27 @@ class EloquentRedirectRepository implements FindsRedirectCandidates, RedirectRep
 
     public function reorder(array $ids): void
     {
-        foreach ($ids as $order => $id) {
-            $this->query()->where('id', $id)->update(['order' => $order]);
-        }
+        $currentOrder = $this->modelQuery()->pluck('order', 'id');
+
+        $this->modelQuery()->getConnection()->transaction(function () use ($ids, $currentOrder) {
+            foreach ($ids as $order => $id) {
+                if ($currentOrder->get($id) === $order) {
+                    continue;
+                }
+
+                $this->modelQuery()->where('id', $id)->update(['order' => $order]);
+            }
+        });
 
         Blink::forget('simple-redirects-ordered-enabled');
     }
 
-    protected function query(): Builder
+    public function query(): EloquentRedirectQueryBuilder
+    {
+        return app(EloquentRedirectQueryBuilder::class)->orderBy('order')->orderBy('id');
+    }
+
+    protected function modelQuery(): Builder
     {
         return RedirectModel::query();
     }

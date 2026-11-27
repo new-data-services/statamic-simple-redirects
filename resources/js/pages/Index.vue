@@ -6,6 +6,7 @@ import { Header, Button, Listing, Badge, Dropdown, DropdownMenu, DropdownItem, S
 const props = defineProps({
     title: String,
     listingUrl: String,
+    columns: Array,
     filters: Array,
     redirectsCount: Number,
     createUrl: String,
@@ -18,7 +19,9 @@ const props = defineProps({
 const preferencesPrefix = 'simple-redirects'
 const instance = getCurrentInstance()
 const reordering = ref(false)
-const allRedirectsLoaded = ref(false)
+const reorderPageLoaded = ref(false)
+const currentPage = ref(1)
+const perPage = ref(null)
 const reorderedItems = ref(null)
 const listing = ref(null)
 const fileInput = ref(null)
@@ -35,18 +38,22 @@ const saveKeyBinding = ref(Statamic.$keys.bindGlobal(['mod+s'], (e) => {
 onBeforeUnmount(() => saveKeyBinding.value?.destroy())
 
 function startReorder() {
-    allRedirectsLoaded.value = false
+    reorderPageLoaded.value = false
     reordering.value = true
 }
 
-function handleRequestCompleted() {
+function handleRequestCompleted({ response }) {
+    currentPage.value = response.data.meta.current_page
+    perPage.value = response.data.meta.per_page
+    reorderedItems.value = null
+
     if (reordering.value) {
-        allRedirectsLoaded.value = true
+        reorderPageLoaded.value = true
     }
 }
 
 function handleReordered(items) {
-    if (! allRedirectsLoaded.value) {
+    if (! reorderPageLoaded.value) {
         return
     }
 
@@ -62,7 +69,7 @@ function saveOrder() {
 
     const order = reorderedItems.value.map(item => item.id)
 
-    instance.proxy.$axios.post(props.reorderUrl, { order })
+    instance.proxy.$axios.post(props.reorderUrl, { order, page: currentPage.value, perPage: perPage.value })
         .then(() => {
             Statamic.$toast.success(__('simple-redirects::messages.redirects_reordered'))
             reorderedItems.value = null
@@ -163,7 +170,7 @@ function handleImportFile(event) {
 
                 <template v-if="reordering">
                     <Button @click="cancelReorder" :text="__('Cancel')" />
-                    <Button @click="saveOrder" :text="__('Save Order')" :disabled="! allRedirectsLoaded" variant="primary" />
+                    <Button @click="saveOrder" :text="__('Save Order')" :disabled="! reorderPageLoaded" variant="primary" />
                 </template>
 
                 <Button
@@ -177,6 +184,7 @@ function handleImportFile(event) {
             <Listing
                 ref="listing"
                 :url="listingUrl"
+                :columns="columns"
                 :additional-parameters="listingParameters"
                 :filters="filters"
                 :action-url="actionUrl"
@@ -186,8 +194,6 @@ function handleImportFile(event) {
                 :allow-presets="false"
                 :reorderable="reordering"
                 :sortable="false"
-                :show-pagination-page-links="! reordering"
-                :show-pagination-per-page-selector="! reordering"
                 @reordered="handleReordered"
                 @request-completed="handleRequestCompleted"
                 @refreshing="refreshCount"

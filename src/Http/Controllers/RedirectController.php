@@ -5,14 +5,15 @@ namespace Ndx\SimpleRedirect\Http\Controllers;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Ndx\SimpleRedirect\Blueprints\RedirectBlueprint;
+use Ndx\SimpleRedirect\Contracts\QueriesRedirects;
 use Ndx\SimpleRedirect\Contracts\Redirect as RedirectContract;
 use Ndx\SimpleRedirect\Contracts\RedirectRepository;
 use Ndx\SimpleRedirect\Facades\Redirect;
 use Ndx\SimpleRedirect\Http\Resources\Redirects;
+use Statamic\Contracts\Query\Builder;
 use Statamic\CP\Column;
 use Statamic\CP\Columns;
 use Statamic\Extensions\Pagination\LengthAwarePaginator;
@@ -40,8 +41,9 @@ class RedirectController extends CpController
         return Inertia::render('simple-redirects::Index', [
             'title'          => __('simple-redirects::messages.redirects'),
             'listingUrl'     => cp_route('simple-redirects.index'),
+            'columns'        => $this->listingColumns()->setPreferred('simple-redirects.columns')->values(),
             'filters'        => $this->listingFilters(),
-            'redirectsCount' => Redirect::all()->count(),
+            'redirectsCount' => $this->redirectQuery()->count(),
             'createUrl'      => cp_route('simple-redirects.create'),
             'reorderUrl'     => cp_route('simple-redirects.reorder'),
             'actionUrl'      => cp_route('simple-redirects.actions.run'),
@@ -162,23 +164,31 @@ class RedirectController extends CpController
     {
         $this->authorize('manage redirects');
 
-        $order = $request->validate(['order' => 'required|array'])['order'];
+        $validated = $request->validate([
+            'order'   => 'required|array',
+            'page'    => 'required|integer|min:1',
+            'perPage' => 'required|integer|min:1',
+        ]);
 
-        if (! $this->isCompleteOrder($order)) {
+        $order   = collect($validated['order'])->map(fn ($id) => (string) $id);
+        $current = Redirect::ordered()->map(fn (RedirectContract $redirect) => (string) $redirect->id())->values();
+        $perPage = $this->perPage($request);
+        $offset  = ($validated['page'] - 1) * $perPage;
+
+        if (! $this->isSameSet($order, $current->slice($offset, $perPage))) {
             abort(409, __('simple-redirects::messages.reorder_out_of_date'));
         }
 
-        app(RedirectRepository::class)->reorder($order);
+        $current->splice($offset, $order->count(), $order->all());
+
+        app(RedirectRepository::class)->reorder($current->all());
 
         return response()->json(['success' => true]);
     }
 
-    protected function isCompleteOrder(array $order): bool
+    protected function isSameSet(Collection $submitted, Collection $existing): bool
     {
-        $submitted = collect($order)->map(fn ($id) => (string) $id)->sort()->values()->all();
-        $existing  = Redirect::all()->map(fn (RedirectContract $redirect) => (string) $redirect->id())->sort()->values()->all();
-
-        return $submitted === $existing;
+        return $submitted->sort()->values()->all() === $existing->sort()->values()->all();
     }
 
     protected function processFormData(Request $request): array
@@ -223,34 +233,31 @@ class RedirectController extends CpController
 
     protected function listing(FilteredRequest $request): JsonResponse
     {
-        $reordering         = $request->boolean('reordering');
-        $redirects          = Redirect::ordered()->values();
+        $query              = $this->redirectQuery();
         $search             = $request->input('search');
         $activeFilterBadges = [];
 
-        if (! $reordering) {
-            $query              = (new ItemQueryBuilder)->withItems($redirects);
-            $filterHandles      = $this->listingFilters()->map->handle()->all();
-            $filters            = collect($request->filters)->only($filterHandles);
+        if (! $request->boolean('reordering')) {
+            $filters            = collect($request->filters)->only($this->listingFilters()->map->handle()->all());
             $activeFilterBadges = $this->queryFilters($query, $filters);
-            $redirects          = $query->get()->values();
+
+            if (filled($search)) {
+                $query->where(fn ($query) => $query
+                    ->where('source', 'like', "%{$search}%")
+                    ->orWhere('destination', 'like', "%{$search}%"));
+            }
         }
 
-        if (! $reordering && filled($search)) {
-            $redirects = $redirects->filter(fn (RedirectContract $redirect) => $this->matchesSearch($redirect, $search))->values();
-        }
-
-        $perPage = $reordering ? max(1, $redirects->count()) : $this->perPage($request);
-        $page    = $reordering ? 1 : max(1, (int) $request->input('page', 1));
+        $redirects = $query->paginate($this->perPage($request), ['*'], 'page', max(1, (int) $request->input('page', 1)));
 
         $payload = $this->runHooksWith('listing-redirects', [
-            'redirects' => $redirects->forPage($page, $perPage)->map(fn (RedirectContract $redirect) => $this->toListingRow($redirect))->values(),
+            'redirects' => $redirects->getCollection()->map(fn (RedirectContract $redirect) => $this->toListingRow($redirect))->values(),
             'columns'   => $this->listingColumns(),
         ]);
 
         $payload->columns->setPreferred('simple-redirects.columns');
 
-        $paginator = new LengthAwarePaginator($payload->redirects->values(), $redirects->count(), $perPage, $page);
+        $paginator = new LengthAwarePaginator($payload->redirects->values(), $redirects->total(), $redirects->perPage(), $redirects->currentPage());
 
         return (new Redirects($paginator))
             ->columns($payload->columns)
@@ -258,15 +265,20 @@ class RedirectController extends CpController
             ->response();
     }
 
+    protected function redirectQuery(): Builder
+    {
+        $repository = app(RedirectRepository::class);
+
+        if (! $repository instanceof QueriesRedirects) {
+            return (new ItemQueryBuilder)->withItems($repository->ordered()->values());
+        }
+
+        return $repository->query();
+    }
+
     protected function listingFilters(): Collection
     {
         return Scope::filters('simple-redirects');
-    }
-
-    protected function matchesSearch(RedirectContract $redirect, string $search): bool
-    {
-        return Str::contains($redirect->source(), $search, ignoreCase: true)
-            || Str::contains($redirect->destination(), $search, ignoreCase: true);
     }
 
     protected function perPage(Request $request): int

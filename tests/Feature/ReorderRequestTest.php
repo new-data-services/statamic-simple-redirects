@@ -19,11 +19,24 @@ beforeEach(function () {
     })->all();
 });
 
-function postOrder(?array $order): TestResponse
+function postOrder(?array $order, int $page = 1, int $perPage = 3): TestResponse
 {
+    $payload = $order === null ? [] : ['order' => $order, 'page' => $page, 'perPage' => $perPage];
+
     return test()
         ->actingAs(test()->user)
-        ->postJson(cp_route('simple-redirects.reorder'), $order === null ? [] : ['order' => $order]);
+        ->postJson(cp_route('simple-redirects.reorder'), $payload);
+}
+
+function addRedirects(int $count): array
+{
+    return collect(range(1, $count))->map(function (int $number) {
+        $redirect = Redirect::make()->source("/more-{$number}")->destination("/new-more-{$number}");
+
+        Redirect::save($redirect);
+
+        return $redirect->id();
+    })->all();
 }
 
 it('saves a complete order', function () {
@@ -52,4 +65,38 @@ it('rejects an order with unknown or duplicate ids', function () {
 
 it('requires an order', function () {
     postOrder(null)->assertStatus(422);
+});
+
+it('reorders only the requested page', function () {
+    [$first, $second, $third] = $this->redirects;
+    [$fourth, $fifth]         = addRedirects(2);
+
+    postOrder([$fourth, $third], page: 2, perPage: 2)->assertOk();
+
+    expect(Redirect::ordered()->map->id()->values()->all())->toBe([$first, $second, $fourth, $third, $fifth]);
+});
+
+it('rejects a page that is out of date', function () {
+    [, , $third]     = $this->redirects;
+    [, $fifth]       = addRedirects(2);
+
+    postOrder([$fifth, $third], page: 2, perPage: 2)->assertStatus(409);
+});
+
+it('clamps per page like the listing', function () {
+    config()->set('statamic.cp.pagination_size_options', [2]);
+
+    [$first, $second, $third] = $this->redirects;
+    [$fourth]                 = addRedirects(1);
+
+    postOrder([$fourth, $third], page: 2, perPage: 1000)->assertOk();
+
+    expect(Redirect::ordered()->map->id()->values()->all())->toBe([$first, $second, $fourth, $third]);
+});
+
+it('requires page and per page', function () {
+    test()->actingAs(test()->user)
+        ->postJson(cp_route('simple-redirects.reorder'), ['order' => $this->redirects])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['page', 'perPage']);
 });

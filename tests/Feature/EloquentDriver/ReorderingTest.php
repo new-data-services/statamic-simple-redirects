@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Ndx\SimpleRedirect\Facades\Redirect;
 use Ndx\SimpleRedirect\Tests\Concerns\WithEloquentDriver;
 
@@ -69,4 +70,23 @@ it('clears cache after reorder', function () {
     $orderedEnabled = Redirect::orderedEnabled();
 
     expect($orderedEnabled->first()->id())->toBe($redirect2->id());
+});
+
+it('only updates redirects whose order changed', function () {
+    $ids = collect(range(1, 4))->map(function (int $number) {
+        $redirect = Redirect::make()->source("/page-{$number}")->destination("/new-{$number}");
+
+        Redirect::save($redirect);
+
+        return $redirect->id();
+    })->all();
+
+    DB::enableQueryLog();
+
+    Redirect::reorder([$ids[0], $ids[2], $ids[1], $ids[3]]);
+
+    $updates = collect(DB::getQueryLog())->filter(fn (array $query) => str_starts_with(strtolower($query['query']), 'update'));
+
+    expect($updates)->toHaveCount(2)
+        ->and(Redirect::ordered()->map->id()->values()->all())->toBe([$ids[0], $ids[2], $ids[1], $ids[3]]);
 });

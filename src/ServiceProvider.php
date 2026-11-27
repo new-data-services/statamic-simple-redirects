@@ -14,6 +14,8 @@ use Ndx\SimpleRedirect\Events\RedirectDeleted;
 use Ndx\SimpleRedirect\Events\RedirectSaved;
 use Ndx\SimpleRedirect\Events\RedirectTreeSaved;
 use Ndx\SimpleRedirect\Http\Middleware\HandleRedirects;
+use Ndx\SimpleRedirect\Models\Redirect as RedirectModel;
+use Ndx\SimpleRedirect\Query\EloquentRedirectQueryBuilder;
 use Ndx\SimpleRedirect\Repositories\EloquentRedirectRepository;
 use Ndx\SimpleRedirect\Repositories\FileRedirectRepository;
 use Ndx\SimpleRedirect\Repositories\FileRedirectTreeRepository;
@@ -74,6 +76,8 @@ class ServiceProvider extends AddonServiceProvider
 
     protected function registerRepositories(): void
     {
+        $this->app->bind(EloquentRedirectQueryBuilder::class, fn () => new EloquentRedirectQueryBuilder(RedirectModel::query()));
+
         if (config('statamic.redirects.driver', 'file') === 'eloquent') {
             $this->app->singleton(RedirectRepository::class, EloquentRedirectRepository::class);
 

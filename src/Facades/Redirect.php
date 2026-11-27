@@ -16,6 +16,7 @@ use Ndx\SimpleRedirect\Contracts\RedirectRepository as RedirectRepositoryContrac
  * @method static bool save(RedirectContract $redirect)
  * @method static bool delete(RedirectContract $redirect)
  * @method static RedirectContract make()
+ * @method static void reorder(array $ids)
  */
 class Redirect extends Facade
 {
